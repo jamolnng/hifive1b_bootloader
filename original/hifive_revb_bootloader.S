@@ -281,56 +281,61 @@ Disassembly of section .sec1:
     20000256:    18d78b63                beq    a5,a3,0x200003ec
 
     ## else not double tapped
+    # gpio
     2000025a:    100127b7                lui    a5,0x10012 # 0x10012000 GPIO
-    2000025e:    4790                    lw     a2,8(a5)
-    20000260:    00080537                lui    a0,0x80
-    20000264:    fff80837                lui    a6,0xfff80
-    20000268:    8e49                    or     a2,a2,a0
-    2000026a:    c790                    sw     a2,8(a5)
-    2000026c:    43b0                    lw     a2,64(a5)
-    2000026e:    187d                    addi   a6,a6,-1
-    20000270:    0200c8b7                lui    a7,0x200c
-    20000274:    8e49                    or     a2,a2,a0
-    20000276:    c3b0                    sw     a2,64(a5)
-    20000278:    5f8c                    lw     a1,56(a5)
-    2000027a:    ffc00637                lui    a2,0xffc00
-    2000027e:    167d                    addi   a2,a2,-1
-    20000280:    0105f5b3                and    a1,a1,a6
-    20000284:    df8c                    sw     a1,56(a5)
-    20000286:    47cc                    lw     a1,12(a5)
-    20000288:    8dc9                    or     a1,a1,a0
-    2000028a:    c7cc                    sw     a1,12(a5)
-    2000028c:    478c                    lw     a1,8(a5)
-    2000028e:    8df1                    and    a1,a1,a2
-    20000290:    c78c                    sw     a1,8(a5)
-    20000292:    5f8c                    lw     a1,56(a5)
-    20000294:    8e6d                    and    a2,a2,a1
-    20000296:    df90                    sw     a2,56(a5)
-    20000298:    0bc72803                lw     a6,188(a4)
-    2000029c:    0ad72e23                sw     a3,188(a4)
-    200002a0:    ff88a703                lw     a4,-8(a7) # 0x200bff8
-    200002a4:    ffc8a783                lw     a5,-4(a7)
-    200002a8:    c03a                    sw     a4,0(sp)
-    200002aa:    c23e                    sw     a5,4(sp)
-    200002ac:    4502                    lw     a0,0(sp)
-    200002ae:    6791                    lui    a5,0x4
-    200002b0:    4592                    lw     a1,4(sp)
-    200002b2:    97aa                    add    a5,a5,a0
-    200002b4:    00a7b733                sltu   a4,a5,a0
-    200002b8:    c43e                    sw     a5,8(sp)
-    200002ba:    00b706b3                add    a3,a4,a1
-    200002be:    c636                    sw     a3,12(sp)
-    200002c0:    ff88a603                lw     a2,-8(a7)
-    200002c4:    ffc8a683                lw     a3,-4(a7)
-    200002c8:    4722                    lw     a4,8(sp)
-    200002ca:    47b2                    lw     a5,12(sp)
-    200002cc:    1cf6f063                bgeu   a3,a5,0x2000048c
+    2000025e:    4790                    lw     a2,8(a5) # load 0x10012008 (output_en)
+    20000260:    00080537                lui    a0,0x80 # 0x00080000
+    20000264:    fff80837                lui    a6,0xfff80 # 0xFFF80000‬
+    20000268:    8e49                    or     a2,a2,a0 # output enable pin 19 (green led)
+    2000026a:    c790                    sw     a2,8(a5) # write to enable
+    2000026c:    43b0                    lw     a2,64(a5) # load 0x10012040‬ (out_xor)
+    2000026e:    187d                    addi   a6,a6,-1 # 0xFFF7FFFF‬
+    20000270:    0200c8b7                lui    a7,0x200c # 0x0200C000‬ (clint)
+    20000274:    8e49                    or     a2,a2,a0 # out_xor pin 19 (green led)
+    20000276:    c3b0                    sw     a2,64(a5) # write to enable
+    20000278:    5f8c                    lw     a1,56(a5) # load 0x10012038 (iof_en)
+    2000027a:    ffc00637                lui    a2,0xffc00 # 0xFFC00000‬
+    2000027e:    167d                    addi   a2,a2,-1 # 0xFFBFFFFF‬
+    20000280:    0105f5b3                and    a1,a1,a6 # disable pin 19 (green led) io function
+    20000284:    df8c                    sw     a1,56(a5) # write to disable
+    20000286:    47cc                    lw     a1,12(a5) # load 0x1001200C (output_val)
+    20000288:    8dc9                    or     a1,a1,a0 # toggle pin 19 (green led)
+    2000028a:    c7cc                    sw     a1,12(a5) # write to enable
+    2000028c:    478c                    lw     a1,8(a5) # load 0x10012008 (output_en)
+    2000028e:    8df1                    and    a1,a1,a2 # output disable pin 22 (red led)
+    20000290:    c78c                    sw     a1,8(a5) # write to disable
+    20000292:    5f8c                    lw     a1,56(a5) # load 0x10012038 (iof_en)
+    20000294:    8e6d                    and    a2,a2,a1 # disable pin 22 (red led) io function
+    20000296:    df90                    sw     a2,56(a5) # write to disable
+    # aon
+    20000298:    0bc72803                lw     a6,188(a4) # 0x100000bc AON_BACKUP15
+    2000029c:    0ad72e23                sw     a3,188(a4) # write BACKUP15_MAGIC to AON_BACKUP15
+    # clint
+    200002a0:    ff88a703                lw     a4,-8(a7) # 0x200bff8 mtime_lo
+    200002a4:    ffc8a783                lw     a5,-4(a7) # 0x200bffc mtime_hi
+    200002a8:    c03a                    sw     a4,0(sp) # save mtime_lo to the stack
+    200002aa:    c23e                    sw     a5,4(sp) # save mtime_hi to the stack
+    200002ac:    4502                    lw     a0,0(sp) # copy mtime_low to a0
+    200002ae:    6791                    lui    a5,0x4 # 0x4000 (number of ticks)
+    200002b0:    4592                    lw     a1,4(sp) # copy mtime_hi to a1
+    200002b2:    97aa                    add    a5,a5,a0 # 0x4000 + mtime_lo (next_mtime_lo)
+    200002b4:    00a7b733                sltu   a4,a5,a0 # a4 = 1 if a5 < a1, else a4 = 0 (checks for overflow)
+    200002b8:    c43e                    sw     a5,8(sp) # store next_mtime_lo to stack
+    200002ba:    00b706b3                add    a3,a4,a1 # if mtime_lo overflow add one to mtime_hi (next_mtime_hi)
+    200002be:    c636                    sw     a3,12(sp) # store next_mtime_hi to stack
+    200002c0:    ff88a603                lw     a2,-8(a7) # 0x200bff8 mtime_lo
+    200002c4:    ffc8a683                lw     a3,-4(a7) # 0x200bffc mtime_hi
+    200002c8:    4722                    lw     a4,8(sp) # copy next_mtime_lo to a4
+    200002ca:    47b2                    lw     a5,12(sp) # copy next_mtime_hi to a5
+    200002cc:    1cf6f063                bgeu   a3,a5,0x2000048c # if mtime_hi >= next_mtime_hi
+    # while (mtime_hi < next_mtime_hi) {
     200002d0:    0200c8b7                lui    a7,0x200c
-    200002d4:    ff88a603                lw     a2,-8(a7) # 0x200bff8
-    200002d8:    ffc8a683                lw     a3,-4(a7)
-    200002dc:    4722                    lw     a4,8(sp)
-    200002de:    47b2                    lw     a5,12(sp)
-    200002e0:    fef6eae3                bltu   a3,a5,0x200002d4
+    200002d4:    ff88a603                lw     a2,-8(a7) # 0x200bff8 mtime_lo
+    200002d8:    ffc8a683                lw     a3,-4(a7) # mtime_hi
+    200002dc:    4722                    lw     a4,8(sp) # copy next_mtime_lo to a4
+    200002de:    47b2                    lw     a5,12(sp) # copy next_mtime_hi to a5
+    200002e0:    fef6eae3                bltu   a3,a5,0x200002d4 # if mtime_hi < next_mtime_hi
+    # }
     200002e4:    00d79463                bne    a5,a3,0x200002ec
     200002e8:    fee666e3                bltu   a2,a4,0x200002d4
     200002ec:    100007b7                lui    a5,0x10000
@@ -372,8 +377,8 @@ Disassembly of section .sec1:
     20000378:    14e7a623                sw     a4,332(a5)
     2000037c:    1407a423                sw     zero,328(a5)
     20000380:    0200c737                lui    a4,0x200c
-    20000384:    ff872603                lw     a2,-8(a4) # 0x200bff8
-    20000388:    ffc72683                lw     a3,-4(a4)
+    20000384:    ff872603                lw     a2,-8(a4) # 0x200bff8 mtime_lo
+    20000388:    ffc72683                lw     a3,-4(a4) # mtime_hi
     2000038c:    6791                    lui    a5,0x4
     2000038e:    c032                    sw     a2,0(sp)
     20000390:    c236                    sw     a3,4(sp)
@@ -390,8 +395,8 @@ Disassembly of section .sec1:
     200003ae:    47b2                    lw     a5,12(sp)
     200003b0:    0ef6f863                bgeu   a3,a5,0x200004a0
     200003b4:    0200c837                lui    a6,0x200c
-    200003b8:    ff882603                lw     a2,-8(a6) # 0x200bff8
-    200003bc:    ffc82683                lw     a3,-4(a6)
+    200003b8:    ff882603                lw     a2,-8(a6) # 0x200bff8 mtime_lo
+    200003bc:    ffc82683                lw     a3,-4(a6) # mtime_hi
     200003c0:    4722                    lw     a4,8(sp)
     200003c2:    47b2                    lw     a5,12(sp)
     200003c4:    fef6eae3                bltu   a3,a5,0x200003b8
@@ -437,8 +442,8 @@ Disassembly of section .sec1:
     20000430:    5f94                    lw    a3,56(a5)
     20000432:    8f75                    and    a4,a4,a3
     20000434:    df98                    sw    a4,56(a5)
-    20000436:    ff882703              lw    a4,-8(a6) # 0x200bff8
-    2000043a:    ffc82783              lw    a5,-4(a6)
+    20000436:    ff882703              lw    a4,-8(a6) # 0x200bff8 (mtime_lo)
+    2000043a:    ffc82783              lw    a5,-4(a6) # mtime_hi
     2000043e:    c03a                    sw    a4,0(sp)
     20000440:    c23e                    sw    a5,4(sp)
     20000442:    4e82                    lw    t4,0(sp)
@@ -464,6 +469,8 @@ Disassembly of section .sec1:
     20000482:    0067c7b3              xor    a5,a5,t1
     20000486:    04f8a023              sw    a5,64(a7)
     2000048a:    b775                    j    0x20000436
+
+    ## jump from (200002cc) if mtime_hi > next_mtime_hi
     2000048c:    e6d790e3              bne    a5,a3,0x200002ec
     20000490:    e4e660e3              bltu    a2,a4,0x200002d0
     20000494:    bda1                    j    0x200002ec
