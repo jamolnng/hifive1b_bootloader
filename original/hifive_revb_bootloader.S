@@ -388,23 +388,23 @@ Disassembly of section .sec1:
     200003a8:    ffc72683                lw     a3,-4(a4)
     200003ac:    4722                    lw     a4,8(sp)
     200003ae:    47b2                    lw     a5,12(sp)
-    200003b0:    0ef6f863                  bgeu    a3,a5,0x200004a0
-    200003b4:    0200c837                  lui        a6,0x200c
-    200003b8:    ff882603                  lw        a2,-8(a6) # 0x200bff8
-    200003bc:    ffc82683                  lw        a3,-4(a6)
-    200003c0:    4722                    lw        a4,8(sp)
-    200003c2:    47b2                    lw        a5,12(sp)
-    200003c4:    fef6eae3                  bltu    a3,a5,0x200003b8
-    200003c8:    00d79463                  bne        a5,a3,0x200003d0
-    200003cc:    fee666e3                  bltu    a2,a4,0x200003b8
-    200003d0:    53f000ef                  jal        ra,0x2000110e
-    200003d4:    6f8010ef                  jal        ra,0x20001acc
-    200003d8:    200107b7                  lui        a5,0x20010
-    200003dc:    9782                    jalr    a5
-    200003de:    40f2                    lw        ra,28(sp)
-    200003e0:    0012d537                  lui     a0,0x12d
-    200003e4:    68750513                  addi    a0,a0,1671 # 0x12d687
-    200003e8:    6105                    addi    sp,sp,32
+    200003b0:    0ef6f863                bgeu   a3,a5,0x200004a0
+    200003b4:    0200c837                lui    a6,0x200c
+    200003b8:    ff882603                lw     a2,-8(a6) # 0x200bff8
+    200003bc:    ffc82683                lw     a3,-4(a6)
+    200003c0:    4722                    lw     a4,8(sp)
+    200003c2:    47b2                    lw     a5,12(sp)
+    200003c4:    fef6eae3                bltu   a3,a5,0x200003b8
+    200003c8:    00d79463                bne    a5,a3,0x200003d0
+    200003cc:    fee666e3                bltu   a2,a4,0x200003b8
+    200003d0:    53f000ef                jal    ra,0x2000110e
+    200003d4:    6f8010ef                jal    ra,0x20001acc
+    200003d8:    200107b7                lui    a5,0x20010
+    200003dc:    9782                    jalr   a5
+    200003de:    40f2                    lw     ra,28(sp)
+    200003e0:    0012d537                lui    a0,0x12d
+    200003e4:    68750513                addi   a0,a0,1671 # 0x12d687
+    200003e8:    6105                    addi   sp,sp,32
     200003ea:    8082                    ret
 
     # double tapped
