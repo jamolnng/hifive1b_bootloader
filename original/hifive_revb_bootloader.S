@@ -267,14 +267,21 @@ Disassembly of section .sec1:
     20000240:    1101                    addi   sp,sp,-32
     20000242:    ce06                    sw     ra,28(sp)
 
-    # 
-    20000244:    30505073                csrwi  mtvec,0 # clear trap vector to zero so will loop on interrupt
-    20000248:    10000737                lui    a4,0x10000
-    2000024c:    0bc72783                lw     a5,188(a4) # 0x100000bc
-    20000250:    d027b6b7                lui    a3,0xd027b
-    20000254:    069d                    addi   a3,a3,7
+    # clear trap vector to zero so will loop on interrupt
+    20000244:    30505073                csrwi  mtvec,0
+
+    # load AON_BACKUP15
+    20000248:    10000737                lui    a4,0x10000 # 0x10000000 AON
+    2000024c:    0bc72783                lw     a5,188(a4) # 0x100000bc AON_BACKUP15
+
+    ## if AON_BACKUP15 == BACKUP15_MAGIC
+    # double tapped
+    20000250:    d027b6b7                lui    a3,0xd027b # 0xD027B000
+    20000254:    069d                    addi   a3,a3,7 # 0xD027B007‬ BACKUP15_MAGIC
     20000256:    18d78b63                beq    a5,a3,0x200003ec
-    2000025a:    100127b7                lui    a5,0x10012
+
+    ## else not double tapped
+    2000025a:    100127b7                lui    a5,0x10012 # 0x10012000 GPIO
     2000025e:    4790                    lw     a2,8(a5)
     20000260:    00080537                lui    a0,0x80
     20000264:    fff80837                lui    a6,0xfff80
@@ -399,6 +406,8 @@ Disassembly of section .sec1:
     200003e4:    68750513                  addi    a0,a0,1671 # 0x12d687
     200003e8:    6105                    addi    sp,sp,32
     200003ea:    8082                    ret
+
+    # double tapped
     200003ec:    0a072e23              sw    zero,188(a4)
     200003f0:    100127b7              lui    a5,0x10012
     200003f4:    4798                    lw    a4,8(a5)
