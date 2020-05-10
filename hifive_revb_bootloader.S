@@ -71,7 +71,7 @@ Disassembly of section .sec1:
     20000076:    85018393                addi    t2,gp,-1968 # 0x800005D0
     2000007a:    00737a63                bgeu    t1,t2,0x2000008e # 0x80000000 >= 0x800005D0 (false)
 
-    # loop to load 0x20002340 to 0x2000290F into ram‬
+    # loop to load 0x20002340 to 0x2000290F into ram‬ (copy .data to ram)
     2000007e:    0002ae03                lw      t3,0(t0)
     20000082:    01c32023                sw      t3,0(t1)
     20000086:    0291                    addi    t0,t0,4
@@ -83,7 +83,7 @@ Disassembly of section .sec1:
     20000092:    94818313                addi    t1,gp,-1720 # 0x800006C8‬
     20000096:    0062f763                bgeu    t0,t1,0x200000a4 # 0x80000600‬ >= 0x800006C8‬ (false)
 
-    # loop to load 0x80000600‬ to 0x800006C8‬ with zeros
+    # loop to load 0x80000600‬ to 0x800006C8‬ with zeros (.bss)
     2000009a:    0002a023                sw      zero,0(t0)
     2000009e:    0291                    addi    t0,t0,4
     200000a0:    fe62ede3                bltu    t0,t1,0x2000009a
