@@ -1,3 +1,4 @@
+_enter:
 # clear registers
 li  ra, 0
 li  sp, 0
