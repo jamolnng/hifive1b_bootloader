@@ -39,7 +39,7 @@
 
 #define PROC_START_ADDR 0x20100000
 
-void benck_rstclk();
+void bench_rstclk();
 void esp32_init();
 
 int main() {
@@ -142,11 +142,13 @@ int main() {
     mmio(AON_CTRL_ADDR, AON_PMUSLEEP) = 0;
   }
 
+  // delay
+  // 20000380
   then = mmio64(CLINT_CTRL_ADDR, CLINT_MTIME) + 0x4000;
   while (mmio64(CLINT_CTRL_ADDR, CLINT_MTIME) < then) {
   }
 
-  benck_rstclk();
+  bench_rstclk();
   esp32_init();
 
   // start user program
@@ -161,7 +163,7 @@ int main() {
   return 1234567;
 }
 
-void benck_rstclk() {
+void bench_rstclk() {
   // todo
 }
 
