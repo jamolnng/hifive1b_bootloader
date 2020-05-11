@@ -346,18 +346,22 @@ Disassembly of section .sec1:
     200002f8:    00072623                sw     zero,12(a4) # 0x1001200C (output_val) = 0
     200002fc:    04072023                sw     zero,64(a4) # 0x10012040 (out_xor) = 0
     20000300:    00072423                sw     zero,8(a4) # 0x10012008 (out_en) = 0
+    //aon
+    ## if (save == BACKUP15_MAGIC2 || save == BACKUP15_MAGIC)
     20000304:    0bc7a703                lw     a4,188(a5) # 0x100000bc AON_BACKUP15
     20000308:    bed0c6b7                lui    a3,0xbed0c # BED0C000
-    2000030c:    ed068693                addi   a3,a3,-304 # 0xffffffffbed0bed0
+    2000030c:    ed068693                addi   a3,a3,-304 # 0xbed0bed0
     20000310:    18d70363                beq    a4,a3,0x20000496
-    20000314:    0bc7a603                lw     a2,188(a5)
-    20000318:    d027b737                lui    a4,0xd027b
-    2000031c:    071d                    addi   a4,a4,7
+    20000314:    0bc7a603                lw     a2,188(a5) # 0x100000bc AON_BACKUP15
+    20000318:    d027b737                lui    a4,0xd027b # 0x0xD027B000
+    2000031c:    071d                    addi   a4,a4,7 # 0xD027B007
     2000031e:    16e60c63                beq    a2,a4,0x20000496
+    ## else {
+    # set pmu sleep instructions 0-3 to 0x18
     20000322:    0051f737                lui    a4,0x51f
     20000326:    15e70713                addi   a4,a4,350 # 0x51f15e
-    2000032a:    14e7a623                sw     a4,332(a5)
-    2000032e:    4661                    li     a2,24
+    2000032a:    14e7a623                sw     a4,332(a5) # 0x1000014C AON_PMUKEY
+    2000032e:    4661                    li     a2,24 # 0x18
     20000330:    12c7a023                sw     a2,288(a5)
     20000334:    14e7a623                sw     a4,332(a5)
     20000338:    12c7a223                sw     a2,292(a5)
@@ -365,8 +369,9 @@ Disassembly of section .sec1:
     20000340:    12c7a423                sw     a2,296(a5)
     20000344:    14e7a623                sw     a4,332(a5)
     20000348:    12c7a623                sw     a2,300(a5)
+    # set pmu sleep instructions 4-7 to 0x38
     2000034c:    14e7a623                sw     a4,332(a5)
-    20000350:    03800613                li     a2,56
+    20000350:    03800613                li     a2,56 # 0x38
     20000354:    12c7a823                sw     a2,304(a5)
     20000358:    14e7a623                sw     a4,332(a5)
     2000035c:    12c7aa23                sw     a2,308(a5)
@@ -374,10 +379,14 @@ Disassembly of section .sec1:
     20000364:    12c7ac23                sw     a2,312(a5)
     20000368:    14e7a623                sw     a4,332(a5)
     2000036c:    12c7ae23                sw     a2,316(a5)
-    20000370:    0ad7ae23                sw     a3,188(a5)
-    20000374:    0807a223                sw     zero,132(a5)
-    20000378:    14e7a623                sw     a4,332(a5)
-    2000037c:    1407a423                sw     zero,328(a5)
+
+    20000370:    0ad7ae23                sw     a3,188(a5) # AON_BACKUP15 = BACKUP15_MAGIC2
+
+    20000374:    0807a223                sw     zero,132(a5) # 0x10000084 AON_BACKUP1
+    
+    20000378:    14e7a623                sw     a4,332(a5) # 0x1000014C AON_PMUKEY
+    2000037c:    1407a423                sw     zero,328(a5) # 0x10000148 AON_PMUKEY
+    # }
     20000380:    0200c737                lui    a4,0x200c
     20000384:    ff872603                lw     a2,-8(a4) # 0x200bff8 mtime_lo
     20000388:    ffc72683                lw     a3,-4(a4) # mtime_hi
@@ -482,12 +491,15 @@ Disassembly of section .sec1:
     20000490:    e4e660e3                bltu   a2,a4,0x200002d0
     20000494:    bda1                    j      0x200002ec
 
+    # save == BACKUP15_MAGIC2 || save == BACKUP15_MAGIC (20000310 || 2000031e)
     20000496:    100007b7              lui    a5,0x10000
     2000049a:    0a07ae23              sw    zero,188(a5) # 0x100000bc
     2000049e:    b5cd                    j    0x20000380
+
     200004a0:    f2d798e3              bne    a5,a3,0x200003d0
     200004a4:    f0e668e3              bltu    a2,a4,0x200003b4
     200004a8:    b725                    j    0x200003d0
+
     200004aa:    100126b7              lui    a3,0x10012
     200004ae:    46cc                    lw    a1,12(a3)
     200004b0:    00680637              lui    a2,0x680
