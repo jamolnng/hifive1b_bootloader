@@ -21,6 +21,8 @@
 
 #define mmio(reg, offset) (*(volatile uint32_t *)((reg) + (offset)))
 
+#define PROC_START_ADDR 0x20100000
+
 int main() {
   uint32_t mtime_lo, mtime_hi, next_lo, next_hi;
 
@@ -68,16 +70,16 @@ int main() {
   mmio(GPIO_CTRL_ADDR, GPIO_OUTPUT_EN) |= GREEN_LED;
   mmio(GPIO_CTRL_ADDR, GPIO_OUT_XOR) |= GREEN_LED;
 
-  // disable gpio function on pin 19
+  // disable iof on pin 19
   mmio(GPIO_CTRL_ADDR, GPIO_IOF_EN) |= ~GREEN_LED;
 
-  // toggle green led
+  // high pin 19 (green led)
   mmio(GPIO_CTRL_ADDR, GPIO_OUTPUT_VAL) |= GREEN_LED;
 
   // disable pin 22 (red led)
   mmio(GPIO_CTRL_ADDR, GPIO_OUTPUT_EN) &= ~RED_LED;
 
-  // disable gpio function on pin 22 (red led)
+  // disable iof on pin 22 (red led)
   mmio(GPIO_CTRL_ADDR, GPIO_IOF_EN) &= ~RED_LED;
 
   // aon
@@ -90,26 +92,19 @@ int main() {
   mtime_lo = mmio(CLINT_CTRL_ADDR, CLINT_MTIME);
   mtime_hi = mmio(CLINT_CTRL_ADDR, CLINT_MTIME + 4);
   next_lo = mtime_lo + 0x4000;
-  // overflow, add 1 to mtime_hi
-  next_hi = mtime_hi + ((next_lo < mtime_lo) ? 1 : 0);
-
-  mtime_lo = mmio(CLINT_CTRL_ADDR, CLINT_MTIME);
-  mtime_hi = mmio(CLINT_CTRL_ADDR, CLINT_MTIME + 4);
-  // 200002cc
-  if (mtime_hi >= next_hi) {
-    // 2000048c
-  } else {
-    // 200002d0
-    // 200002d4
-    // 200002e0
-    while (mtime_hi < next_hi) {
-      mtime_hi = mmio(CLINT_CTRL_ADDR, CLINT_MTIME + 4);
-    }
-
-    do {
-      mtime_lo = mmio(CLINT_CTRL_ADDR, CLINT_MTIME);
-      mtime_hi = mmio(CLINT_CTRL_ADDR, CLINT_MTIME + 4);
-    } while (mtime_hi == next_hi && mtime_lo < next_lo);
+  next_hi = mtime_hi + (next_lo < mtime_lo);
+  // 200002e0
+  while (mtime_hi < next_hi) {
+    mtime_hi = mmio(CLINT_CTRL_ADDR, CLINT_MTIME + 4);
   }
-  return 0;
+
+  do {
+    mtime_lo = mmio(CLINT_CTRL_ADDR, CLINT_MTIME);
+    mtime_hi = mmio(CLINT_CTRL_ADDR, CLINT_MTIME + 4);
+  } while (next_hi == mtime_hi && mtime_lo < next_lo);
+
+  void (*proc_start)(void) = (void *)PROC_START_ADDR;
+  proc_start();
+
+  return 1234567;
 }
