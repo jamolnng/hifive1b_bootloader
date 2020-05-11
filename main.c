@@ -73,8 +73,8 @@ int main() {
   mmio(AON_CTRL_ADDR, AON_BACKUP15) = BACKUP15_MAGIC;
 
   // clint
-  then = mmio64(CLINT_CTRL_ADDR, CLINT_MTIME) + 0x4000;
   // 200002E0
+  then = mmio64(CLINT_CTRL_ADDR, CLINT_MTIME) + 0x4000;
   while (mmio64(CLINT_CTRL_ADDR, CLINT_MTIME) < then) {
   }
 
