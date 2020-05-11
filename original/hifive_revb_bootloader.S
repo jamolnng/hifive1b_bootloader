@@ -311,6 +311,7 @@ Disassembly of section .sec1:
     20000298:    0bc72803                lw     a6,188(a4) # 0x100000bc AON_BACKUP15
     2000029c:    0ad72e23                sw     a3,188(a4) # write BACKUP15_MAGIC to AON_BACKUP15
     # clint
+    # delay
     200002a0:    ff88a703                lw     a4,-8(a7) # 0x200bff8 mtime_lo
     200002a4:    ffc8a783                lw     a5,-4(a7) # 0x200bffc mtime_hi
     200002a8:    c03a                    sw     a4,0(sp) # save mtime_lo to the stack
@@ -383,36 +384,38 @@ Disassembly of section .sec1:
     20000370:    0ad7ae23                sw     a3,188(a5) # AON_BACKUP15 = BACKUP15_MAGIC2
 
     20000374:    0807a223                sw     zero,132(a5) # 0x10000084 AON_BACKUP1
-    
+
     20000378:    14e7a623                sw     a4,332(a5) # 0x1000014C AON_PMUKEY
     2000037c:    1407a423                sw     zero,328(a5) # 0x10000148 AON_PMUKEY
     # }
+    # delay
     20000380:    0200c737                lui    a4,0x200c
     20000384:    ff872603                lw     a2,-8(a4) # 0x200bff8 mtime_lo
     20000388:    ffc72683                lw     a3,-4(a4) # mtime_hi
-    2000038c:    6791                    lui    a5,0x4
-    2000038e:    c032                    sw     a2,0(sp)
-    20000390:    c236                    sw     a3,4(sp)
-    20000392:    4802                    lw     a6,0(sp)
-    20000394:    4892                    lw     a7,4(sp)
-    20000396:    97c2                    add    a5,a5,a6
-    20000398:    0107b533                sltu   a0,a5,a6
-    2000039c:    c43e                    sw     a5,8(sp)
-    2000039e:    011506b3                add    a3,a0,a7
-    200003a2:    c636                    sw     a3,12(sp)
-    200003a4:    ff872603                lw     a2,-8(a4)
-    200003a8:    ffc72683                lw     a3,-4(a4)
-    200003ac:    4722                    lw     a4,8(sp)
-    200003ae:    47b2                    lw     a5,12(sp)
-    200003b0:    0ef6f863                bgeu   a3,a5,0x200004a0
-    200003b4:    0200c837                lui    a6,0x200c
+    2000038c:    6791                    lui    a5,0x4 # 0x00004000
+    2000038e:    c032                    sw     a2,0(sp) # save mtime_lo to stack
+    20000390:    c236                    sw     a3,4(sp) # save mtime_hi to stack
+    20000392:    4802                    lw     a6,0(sp) # a6 = mtime_lo
+    20000394:    4892                    lw     a7,4(sp) # a7 = mtime_hi
+    20000396:    97c2                    add    a5,a5,a6 # next_lo = mtime_lo + 0x4000
+    20000398:    0107b533                sltu   a0,a5,a6 # next_lo < mtime_low overflow bit
+    2000039c:    c43e                    sw     a5,8(sp) # save next_lo to stack
+    2000039e:    011506b3                add    a3,a0,a7 # next_hi = mtime_hi + overflow bit
+    200003a2:    c636                    sw     a3,12(sp) # save next_hi to stack
+    200003a4:    ff872603                lw     a2,-8(a4) # a2 = mtime_lo
+    200003a8:    ffc72683                lw     a3,-4(a4) # a3 = mtime_hi
+    200003ac:    4722                    lw     a4,8(sp) # a4 = next_lo
+    200003ae:    47b2                    lw     a5,12(sp) # a5 = next_hi
+    200003b0:    0ef6f863                bgeu   a3,a5,0x200004a0 # if mtime_hi >= next_hi
+    200003b4:    0200c837                lui    a6,0x200c # 0x200C0000
     200003b8:    ff882603                lw     a2,-8(a6) # 0x200bff8 mtime_lo
     200003bc:    ffc82683                lw     a3,-4(a6) # mtime_hi
-    200003c0:    4722                    lw     a4,8(sp)
-    200003c2:    47b2                    lw     a5,12(sp)
+    200003c0:    4722                    lw     a4,8(sp) # a4 = next_lo
+    200003c2:    47b2                    lw     a5,12(sp) # a5 = next_hi
     200003c4:    fef6eae3                bltu   a3,a5,0x200003b8
     200003c8:    00d79463                bne    a5,a3,0x200003d0
     200003cc:    fee666e3                bltu   a2,a4,0x200003b8
+
     200003d0:    53f000ef                jal    ra,0x2000110e
     200003d4:    6f8010ef                jal    ra,0x20001acc
     200003d8:    200107b7                lui    a5,0x20010
@@ -455,6 +458,7 @@ Disassembly of section .sec1:
     20000432:    8f75                    and    a4,a4,a3 # disable iof_en pin 19 (green led)
     20000434:    df98                    sw     a4,56(a5) # disable iof_en pin 19 (green led) write
     # do {
+    # delay
     20000436:    ff882703                lw     a4,-8(a6) # 0x200bff8 (mtime_lo)
     2000043a:    ffc82783                lw     a5,-4(a6) # mtime_hi
     2000043e:    c03a                    sw     a4,0(sp) # save mtime_lo on stack
