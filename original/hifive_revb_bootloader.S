@@ -284,7 +284,7 @@ Disassembly of section .sec1:
     # gpio
     2000025a:    100127b7                lui    a5,0x10012 # 0x10012000 GPIO
     2000025e:    4790                    lw     a2,8(a5) # load 0x10012008 (output_en)
-    20000260:    00080537                lui    a0,0x80 # 0x00080000
+    20000260:    00080537                lui    a0,0x80 # 0x00080000 (green led)
     20000264:    fff80837                lui    a6,0xfff80 # 0xFFF80000‬
     20000268:    8e49                    or     a2,a2,a0 # output enable pin 19 (green led)
     2000026a:    c790                    sw     a2,8(a5) # write to enable
@@ -413,62 +413,67 @@ Disassembly of section .sec1:
     200003ea:    8082                    ret
 
     # double tapped
-    200003ec:    0a072e23              sw    zero,188(a4)
-    200003f0:    100127b7              lui    a5,0x10012
-    200003f4:    4798                    lw    a4,8(a5)
-    200003f6:    00400637              lui    a2,0x400
-    200003fa:    ffc005b7              lui    a1,0xffc00
-    200003fe:    8f51                    or    a4,a4,a2
-    20000400:    c798                    sw    a4,8(a5)
-    20000402:    43b8                    lw    a4,64(a5)
-    20000404:    15fd                    addi    a1,a1,-1
-    20000406:    0200c837              lui    a6,0x200c
-    2000040a:    8f51                    or    a4,a4,a2
-    2000040c:    c3b8                    sw    a4,64(a5)
-    2000040e:    5f94                    lw    a3,56(a5)
-    20000410:    fff80737              lui    a4,0xfff80
-    20000414:    177d                    addi    a4,a4,-1
-    20000416:    8eed                    and    a3,a3,a1
-    20000418:    df94                    sw    a3,56(a5)
-    2000041a:    47d4                    lw    a3,12(a5)
-    2000041c:    6e11                    lui    t3,0x4
-    2000041e:    100128b7              lui    a7,0x10012
-    20000422:    8ed1                    or    a3,a3,a2
-    20000424:    c7d4                    sw    a3,12(a5)
-    20000426:    4794                    lw    a3,8(a5)
-    20000428:    00400337              lui    t1,0x400
-    2000042c:    8ef9                    and    a3,a3,a4
-    2000042e:    c794                    sw    a3,8(a5)
-    20000430:    5f94                    lw    a3,56(a5)
-    20000432:    8f75                    and    a4,a4,a3
-    20000434:    df98                    sw    a4,56(a5)
-    20000436:    ff882703              lw    a4,-8(a6) # 0x200bff8 (mtime_lo)
-    2000043a:    ffc82783              lw    a5,-4(a6) # mtime_hi
-    2000043e:    c03a                    sw    a4,0(sp)
-    20000440:    c23e                    sw    a5,4(sp)
-    20000442:    4e82                    lw    t4,0(sp)
-    20000444:    4f12                    lw    t5,4(sp)
-    20000446:    01ce85b3              add    a1,t4,t3
-    2000044a:    01d5b633              sltu    a2,a1,t4
-    2000044e:    c42e                    sw    a1,8(sp)
-    20000450:    01e607b3              add    a5,a2,t5
-    20000454:    c63e                    sw    a5,12(sp)
-    20000456:    ff882503              lw    a0,-8(a6)
-    2000045a:    ffc82583              lw    a1,-4(a6)
-    2000045e:    4622                    lw    a2,8(sp)
-    20000460:    46b2                    lw    a3,12(sp)
-    20000462:    00d5fa63              bgeu    a1,a3,0x20000476
-    20000466:    ff882503              lw    a0,-8(a6)
-    2000046a:    ffc82583              lw    a1,-4(a6)
-    2000046e:    4622                    lw    a2,8(sp)
-    20000470:    46b2                    lw    a3,12(sp)
-    20000472:    fed5eae3              bltu    a1,a3,0x20000466
-    20000476:    00b69463              bne    a3,a1,0x2000047e
-    2000047a:    fec566e3              bltu    a0,a2,0x20000466
-    2000047e:    0408a783              lw    a5,64(a7) # 0x10012040
-    20000482:    0067c7b3              xor    a5,a5,t1
-    20000486:    04f8a023              sw    a5,64(a7)
-    2000048a:    b775                    j    0x20000436
+    # a4 = 10000000
+    200003ec:    0a072e23                sw     zero,188(a4) # AON_BACKUP15 = 0
+    200003f0:    100127b7                lui    a5,0x10012 # GPIO 0x10012000
+    200003f4:    4798                    lw     a4,8(a5) # 0x10012008 (output_en)
+    200003f6:    00400637                lui    a2,0x400 # 0x00400000 (red led)
+    200003fa:    ffc005b7                lui    a1,0xffc00 # 0xFFC00000
+    200003fe:    8f51                    or     a4,a4,a2 # output enable pin 22 (red led)
+    20000400:    c798                    sw     a4,8(a5) # enable pin 22 (red led) write
+    20000402:    43b8                    lw     a4,64(a5) # 0x10012040 (out_xor)
+    20000404:    15fd                    addi   a1,a1,-1 # 0xFFBFFFFF ~(red led)
+    20000406:    0200c837                lui    a6,0x200c # 0x0200C000
+    2000040a:    8f51                    or     a4,a4,a2 # xor enable pin 22 (red led)
+    2000040c:    c3b8                    sw     a4,64(a5) # enable xor pin 22 (red led) write
+    2000040e:    5f94                    lw     a3,56(a5) # 0x10012038 (iof_en)
+    20000410:    fff80737                lui    a4,0xfff80 # 0xFFF80000
+    20000414:    177d                    addi   a4,a4,-1 # 0xFFF7FFFF ~(green led)
+    20000416:    8eed                    and    a3,a3,a1 # disable iof_en pin 22 (red led)
+    20000418:    df94                    sw     a3,56(a5) # disable iof_en pin 22 (red led) write
+    2000041a:    47d4                    lw     a3,12(a5) # 0x1001200C (out_val)
+    2000041c:    6e11                    lui    t3,0x4 # 0x00004000
+    2000041e:    100128b7                lui    a7,0x10012 # GPIO 0x10012000
+    20000422:    8ed1                    or     a3,a3,a2 # high pin 22 (red led)
+    20000424:    c7d4                    sw     a3,12(a5) # high pin 22 (red led) on write
+    20000426:    4794                    lw     a3,8(a5) # 0x10012008 (output_en)
+    20000428:    00400337                lui    t1,0x400 # 0x00400000 (red led)
+    2000042c:    8ef9                    and    a3,a3,a4 # disable pin 19 (green led)
+    2000042e:    c794                    sw     a3,8(a5) # disable pin 19 (green led) write
+    20000430:    5f94                    lw     a3,56(a5) # 0x10012038 (iof_en)
+    20000432:    8f75                    and    a4,a4,a3 # disable iof_en pin 19 (green led)
+    20000434:    df98                    sw     a4,56(a5) # disable iof_en pin 19 (green led) write
+    # do {
+    20000436:    ff882703                lw     a4,-8(a6) # 0x200bff8 (mtime_lo)
+    2000043a:    ffc82783                lw     a5,-4(a6) # mtime_hi
+    2000043e:    c03a                    sw     a4,0(sp) # save mtime_lo on stack
+    20000440:    c23e                    sw     a5,4(sp) # save mtime_hi on stack
+    20000442:    4e82                    lw     t4,0(sp) # t4 = saved mtime_lo
+    20000444:    4f12                    lw     t5,4(sp) # t5 = saved mtime_hi
+    20000446:    01ce85b3                add    a1,t4,t3 # next_lo = saved_mtime_lo + 0x4000
+    2000044a:    01d5b633                sltu   a2,a1,t4 # overflow bit = next_lo < mtime_lo checks
+    2000044e:    c42e                    sw     a1,8(sp) # save next_lo to stack 
+    20000450:    01e607b3                add    a5,a2,t5 # next_hi = mtime_hi + overflow bit
+    20000454:    c63e                    sw     a5,12(sp) # save next_hi to stack
+    # while(mtime_hi < next_hi)
+    20000456:    ff882503                lw     a0,-8(a6) # a0 = mtime_lo
+    2000045a:    ffc82583                lw     a1,-4(a6) # a1 = mtime_hi
+    2000045e:    4622                    lw     a2,8(sp) # a2 = next_lo
+    20000460:    46b2                    lw     a3,12(sp) # a3 = next_hi
+    20000462:    00d5fa63                bgeu   a1,a3,0x20000476
+    20000466:    ff882503                lw     a0,-8(a6) # a0 = mtime_lo
+    2000046a:    ffc82583                lw     a1,-4(a6) # a1 = mtime_hi
+    2000046e:    4622                    lw     a2,8(sp) # a2 = next_lo
+    20000470:    46b2                    lw     a3,12(sp) # a3 = next_hi
+    20000472:    fed5eae3                bltu   a1,a3,0x20000466
+    # }
+    20000476:    00b69463                bne    a3,a1,0x2000047e
+    2000047a:    fec566e3                bltu   a0,a2,0x20000466
+    2000047e:    0408a783                lw     a5,64(a7) # 0x10012040 (out_xor)
+    20000482:    0067c7b3                xor    a5,a5,t1 # toggle xor pin 22 (red led)
+    20000486:    04f8a023                sw     a5,64(a7) # toggle xor pin 22 (red led) write
+    2000048a:    b775                    j      0x20000436
+    # } while(1)
 
     ## jump from (200002cc) if mtime_hi > next_mtime_hi
     2000048c:    e6d790e3              bne    a5,a3,0x200002ec
