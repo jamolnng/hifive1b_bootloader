@@ -19,6 +19,7 @@
 #define GREEN_LED 0x00080000ul
 #define RED_LED 0x00400000ul
 
+// mmio (memory mapped i/o) macro
 #define mmio(reg, offset) (*(volatile uint32_t *)((reg) + (offset)))
 
 #define PROC_START_ADDR 0x20100000
@@ -83,8 +84,8 @@ int main() {
   mmio(GPIO_CTRL_ADDR, GPIO_IOF_EN) &= ~RED_LED;
 
   // aon
-  // 20000298: could be useless
-  // uint32_t aon_backup15 = mmio(AON_CTRL_ADDR, AON_BACKUP15);
+  // 20000298
+  uint32_t aon_backup15 = mmio(AON_CTRL_ADDR, AON_BACKUP15);
   // 2000029c
   mmio(AON_CTRL_ADDR, AON_BACKUP15) = BACKUP15_MAGIC;
 
@@ -103,8 +104,14 @@ int main() {
     mtime_hi = mmio(CLINT_CTRL_ADDR, CLINT_MTIME + 4);
   } while (next_hi == mtime_hi && mtime_lo < next_lo);
 
-  void (*proc_start)(void) = (void *)PROC_START_ADDR;
-  proc_start();
+  // start user program
+  ((void (*)(void))PROC_START_ADDR)();
 
+  // this is here so the compiler does not yell at us
+  // it should never be reached
+  // in theory we could change main to a void
+  // and save like 8 bytes in the binary size
+  // however, the goal of this is to emulate the
+  // official bootloader as much as possible
   return 1234567;
 }
