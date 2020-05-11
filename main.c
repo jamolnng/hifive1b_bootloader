@@ -10,7 +10,7 @@
 #define GPIO_OUTPUT_VAL 0x0C
 #define GPIO_LOW_IP 0x34
 #define GPIO_IOF_EN 0x38
-#define GPIO_OUT_XOR 0x40
+#define GPIO_OUTPUT_XOR 0x40
 
 #define CLINT_CTRL_ADDR 0x02000000ul
 #define CLINT_MTIMECMP 0x4000
@@ -20,12 +20,14 @@
 #define RED_LED 0x00400000ul
 
 // mmio (memory mapped i/o) macro
-#define mmio(reg, offset) (*(volatile uint32_t *)((reg) + (offset)))
+#define mmio32(reg, offset) (*(volatile uint32_t *)((reg) + (offset)))
+#define mmio64(reg, offset) (*(volatile uint64_t *)((reg) + (offset)))
+#define mmio mmio32
 
 #define PROC_START_ADDR 0x20100000
 
 int main() {
-  uint32_t mtime_lo, mtime_hi, next_lo, next_hi;
+  uint32_t then;
 
   // Restore the default mtvec (which may have been set by initialization
   // code, depending on the environment in which this C code is compiled).
@@ -35,74 +37,56 @@ int main() {
 
   // 20000256
   if (mmio(AON_CTRL_ADDR, AON_BACKUP15) == BACKUP15_MAGIC) {
-    // 200003ec
     // Reset was "double-tapped".
     mmio(AON_CTRL_ADDR, AON_BACKUP15) = 0;
 
     mmio(GPIO_CTRL_ADDR, GPIO_OUTPUT_EN) |= RED_LED;
-    mmio(GPIO_CTRL_ADDR, GPIO_OUT_XOR) |= RED_LED;
+    mmio(GPIO_CTRL_ADDR, GPIO_OUTPUT_XOR) |= RED_LED;
     mmio(GPIO_CTRL_ADDR, GPIO_IOF_EN) &= ~RED_LED;
     mmio(GPIO_CTRL_ADDR, GPIO_OUTPUT_VAL) |= RED_LED;
 
     mmio(GPIO_CTRL_ADDR, GPIO_OUTPUT_EN) &= ~GREEN_LED;
 
     do {
-      mtime_lo = mmio(CLINT_CTRL_ADDR, CLINT_MTIME);
-      mtime_hi = mmio(CLINT_CTRL_ADDR, CLINT_MTIME + 4);
-      next_lo = mtime_lo + 0x4000;
-      next_hi = mtime_hi + (next_lo < mtime_lo);
-      // 20000456
-      while (mtime_hi < next_hi) {
-        mtime_hi = mmio(CLINT_CTRL_ADDR, CLINT_MTIME + 4);
+      then = mmio64(CLINT_CTRL_ADDR, CLINT_MTIME) + 0x4000;
+      while (mmio64(CLINT_CTRL_ADDR, CLINT_MTIME) < then) {
       }
-
-      do {
-        mtime_lo = mmio(CLINT_CTRL_ADDR, CLINT_MTIME);
-        mtime_hi = mmio(CLINT_CTRL_ADDR, CLINT_MTIME + 4);
-      } while (next_hi == mtime_hi && mtime_lo < next_lo);
-
-      mmio(GPIO_CTRL_ADDR, GPIO_OUT_XOR) ^= RED_LED;
+      mmio(GPIO_CTRL_ADDR, GPIO_OUTPUT_XOR) ^= RED_LED;
 
     } while (1);
   }
-  // 2000025a
+
+  // 2000025A
   // gpio
   // enable and invert output for pin 19 (green led)
   mmio(GPIO_CTRL_ADDR, GPIO_OUTPUT_EN) |= GREEN_LED;
-  mmio(GPIO_CTRL_ADDR, GPIO_OUT_XOR) |= GREEN_LED;
-
-  // disable iof on pin 19
+  mmio(GPIO_CTRL_ADDR, GPIO_OUTPUT_XOR) |= GREEN_LED;
   mmio(GPIO_CTRL_ADDR, GPIO_IOF_EN) |= ~GREEN_LED;
-
-  // high pin 19 (green led)
   mmio(GPIO_CTRL_ADDR, GPIO_OUTPUT_VAL) |= GREEN_LED;
 
-  // disable pin 22 (red led)
   mmio(GPIO_CTRL_ADDR, GPIO_OUTPUT_EN) &= ~RED_LED;
-
-  // disable iof on pin 22 (red led)
   mmio(GPIO_CTRL_ADDR, GPIO_IOF_EN) &= ~RED_LED;
 
   // aon
   // 20000298
-  uint32_t aon_backup15 = mmio(AON_CTRL_ADDR, AON_BACKUP15);
-  // 2000029c
+  uint32_t save = mmio(AON_CTRL_ADDR, AON_BACKUP15);
   mmio(AON_CTRL_ADDR, AON_BACKUP15) = BACKUP15_MAGIC;
 
   // clint
-  mtime_lo = mmio(CLINT_CTRL_ADDR, CLINT_MTIME);
-  mtime_hi = mmio(CLINT_CTRL_ADDR, CLINT_MTIME + 4);
-  next_lo = mtime_lo + 0x4000;
-  next_hi = mtime_hi + (next_lo < mtime_lo);
-  // 200002e0
-  while (mtime_hi < next_hi) {
-    mtime_hi = mmio(CLINT_CTRL_ADDR, CLINT_MTIME + 4);
+  then = mmio64(CLINT_CTRL_ADDR, CLINT_MTIME) + 0x4000;
+  // 200002E0
+  while (mmio64(CLINT_CTRL_ADDR, CLINT_MTIME) < then) {
   }
 
-  do {
-    mtime_lo = mmio(CLINT_CTRL_ADDR, CLINT_MTIME);
-    mtime_hi = mmio(CLINT_CTRL_ADDR, CLINT_MTIME + 4);
-  } while (next_hi == mtime_hi && mtime_lo < next_lo);
+  // aon
+  // 200002EC
+  mmio(AON_CTRL_ADDR, AON_BACKUP15) = save;
+
+  // gpio
+  // 200002f4
+  mmio(GPIO_CTRL_ADDR, GPIO_OUTPUT_EN) = 0;
+  mmio(GPIO_CTRL_ADDR, GPIO_OUTPUT_VAL) = 0;
+  mmio(GPIO_CTRL_ADDR, GPIO_OUTPUT_XOR) = 0;
 
   // start user program
   ((void (*)(void))PROC_START_ADDR)();

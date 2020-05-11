@@ -338,14 +338,16 @@ Disassembly of section .sec1:
     # }
     200002e4:    00d79463                bne    a5,a3,0x200002ec
     200002e8:    fee666e3                bltu   a2,a4,0x200002d4
+    //aon
     200002ec:    100007b7                lui    a5,0x10000
-    200002f0:    0b07ae23                sw     a6,188(a5) # 0x100000bc
-    200002f4:    10012737                lui    a4,0x10012
-    200002f8:    00072623                sw     zero,12(a4) # 0x1001200c
-    200002fc:    04072023                sw     zero,64(a4)
-    20000300:    00072423                sw     zero,8(a4)
-    20000304:    0bc7a703                lw     a4,188(a5)
-    20000308:    bed0c6b7                lui    a3,0xbed0c
+    200002f0:    0b07ae23                sw     a6,188(a5) # 0x100000bc AON_BACKUP15
+    //gpio
+    200002f4:    10012737                lui    a4,0x10012 # GPIO 0x10012000
+    200002f8:    00072623                sw     zero,12(a4) # 0x1001200C (output_val) = 0
+    200002fc:    04072023                sw     zero,64(a4) # 0x10012040 (out_xor) = 0
+    20000300:    00072423                sw     zero,8(a4) # 0x10012008 (out_en) = 0
+    20000304:    0bc7a703                lw     a4,188(a5) # 0x100000bc AON_BACKUP15
+    20000308:    bed0c6b7                lui    a3,0xbed0c # BED0C000
     2000030c:    ed068693                addi   a3,a3,-304 # 0xffffffffbed0bed0
     20000310:    18d70363                beq    a4,a3,0x20000496
     20000314:    0bc7a603                lw     a2,188(a5)
@@ -476,9 +478,10 @@ Disassembly of section .sec1:
     # } while(1)
 
     ## jump from (200002cc) if mtime_hi > next_mtime_hi
-    2000048c:    e6d790e3              bne    a5,a3,0x200002ec
-    20000490:    e4e660e3              bltu    a2,a4,0x200002d0
-    20000494:    bda1                    j    0x200002ec
+    2000048c:    e6d790e3                bne    a5,a3,0x200002ec
+    20000490:    e4e660e3                bltu   a2,a4,0x200002d0
+    20000494:    bda1                    j      0x200002ec
+
     20000496:    100007b7              lui    a5,0x10000
     2000049a:    0a07ae23              sw    zero,188(a5) # 0x100000bc
     2000049e:    b5cd                    j    0x20000380
