@@ -243,6 +243,7 @@ void bench_rstclk() {
   // so really it's using the ext osc
   mmio(PRCI_CTRL_ADDR, PRCI_PLL_CFG) |= (1 << PLL_SEL);
 
+  // warm up the clock
   measure_lfosc_freq();
 
   _puts("Bench Clock Reset Complete\r\n");
