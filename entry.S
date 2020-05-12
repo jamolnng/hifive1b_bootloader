@@ -47,8 +47,7 @@ _enter:
   csrw  mtvec, t0
   
   # enable software interrupts
-  li    s2, 8
-  csrw  mie, s2
+  csrwi  mie, 8
 
   # only counting for hart id = 0
   # since this is for hifive1 rev b
