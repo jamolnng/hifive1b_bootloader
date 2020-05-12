@@ -234,7 +234,7 @@ void bench_rstclk() {
   mmio(uart, UART_RX_CTRL) = 0x1;
 
   // delay... why?
-  for (uint32_t i = 0u; i < 9999u; i++) {
+  for (uint32_t i = 0u; i <= 9999u; i++) {
   }
 
   // use external oscillator

@@ -1647,8 +1647,8 @@ Disassembly of section .sec1:
     2000116a:    c71c                  sw     a5,8(a4) # enable tx and set txcnt to 1 in txctrl
     2000116c:    4785                  li     a5,1
     2000116e:    c75c                  sw     a5,12(a4) # write 1 to rxctrl to enable rx
-    20001170:    c602                  sw     zero,12(sp) # write 0 to 12(sp)?
-    20001172:    47b2                  lw     a5,12(sp) # a5 = 12(sp)? yo compiler why not li a5,0
+    20001170:    c602                  sw     zero,12(sp) # write 0 to 12(sp)
+    20001172:    47b2                  lw     a5,12(sp) # a5 = 12(sp) = 0
     20001174:    6709                  lui    a4,0x2
     20001176:    70f70713              addi   a4,a4,1807 # 0x270f = 9999
     # for(a5 = 0; a5 < a4; a5++)
