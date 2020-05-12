@@ -1570,7 +1570,7 @@ Disassembly of section .sec1:
     200010aa:    8082                    ret
 
     # <measure_lfosc_freq>
-    200010ac:    100087b7              lui    a5,0x10008
+    200010ac:    100087b7              lui    a5,0x10008 # 
     200010b0:    00060737              lui    a4,0x60
     200010b4:    c798                    sw    a4,8(a5)
     200010b6:    4798                    lw    a4,8(a5)
@@ -2815,6 +2815,8 @@ Disassembly of section .sec2:
     20001ede:    3a52                    fld    fs4,304(sp)
     20001ee0:    0020                    addi    s0,sp,8
     20001ee2:    0000                    unimp
+
+    #  FAILED WITH CODE 
     20001ee4:    4620                    lw    s0,72(a2)
     20001ee6:    4941                    li    s2,16
     20001ee8:    454c                    lw    a1,12(a0)
@@ -2823,15 +2825,23 @@ Disassembly of section .sec2:
     20001ef0:    4320                    lw    s0,64(a4)
     20001ef2:    2045444f              fnmadd.s    fs0,fa0,ft4,ft4,rmm
     20001ef6:    0000                    unimp
+
+    # .[1F
     20001ef8:    46315b1b              0x46315b1b
     20001efc:    0000                    unimp
     20001efe:    0000                    unimp
+
+    # .[0J
     20001f00:    4a305b1b              0x4a305b1b
     20001f04:    0000                    unimp
     20001f06:    0000                    unimp
+
+    # .[?25h
     20001f08:    323f5b1b              0x323f5b1b
     20001f0c:    6835                    lui    a6,0xd
     20001f0e:    0000                    unimp
+
+    # .[0;39;49m
     20001f10:    3b305b1b              0x3b305b1b
     20001f14:    343b3933              0x343b3933
     20001f18:    6d39                    lui    s10,0xe
