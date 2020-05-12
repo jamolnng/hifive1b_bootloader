@@ -10,7 +10,7 @@ Disassembly of section .sec1:
     20000000:    a011                    j       0x20000004
     20000002:    8082                    ret
 
-    # clear registers
+    # clear registers (except a0 and a1)
     20000004:    4081                    li      ra,0
     20000006:    4101                    li      sp,0
     20000008:    4181                    li      gp,0
@@ -137,11 +137,14 @@ Disassembly of section .sec1:
 
     ## if main returns 0
     2000010e:    a011                    j       0x20000112
+    # <abort>
     20000110:    557d                    li      a0,-1
-    20000112:    cd19                    beqz    a0,0x20000130
 
-    # main does not return 0
+    # <exit_>
+    20000112:    cd19                    beqz    a0,0x20000130
     20000114:    8e2a                    mv      t3,a0
+
+    # main does not return 0 <_fail>
     20000116:    e111                    bnez    a0,0x2000011a
     20000118:    4505                    li      a0,1
     2000011a:    35e5                    jal     0x20000002
@@ -152,9 +155,9 @@ Disassembly of section .sec1:
     20000128:    951a                    add     a0,a0,t1
     2000012a:    00a2a023                sw      a0,0(t0) # 0x4000
     2000012e:    a001                    j       0x2000012e # infinite loop
+    # end _fail
 
-    # main returns 0
-    # I think this is trying to signal some sort of error state
+    # main returns 0 <_pass>
     20000130:    0ff0000f                fence
     20000134:    4501                    li     a0,0
     20000136:    35f1                    jal    0x20000002 # (instant return)
@@ -169,6 +172,7 @@ Disassembly of section .sec1:
     2000014c:    2005                    jal    0x2000016c
 
     # this doesn't get called? at least not on hifive1b
+    # I think this is the exit protocol for harts except hart 0
     2000014e:    cd19                    beqz   a0,0x2000016c
     20000150:    8e2a                    mv     t3,a0
     20000152:    e111                    bnez   a0,0x20000156
@@ -181,8 +185,9 @@ Disassembly of section .sec1:
     20000164:    951a                    add    a0,a0,t1
     20000166:    00a2a023                sw     a0,0(t0) # 0x4000
     2000016a:    a001                    j      0x2000016a # infinte loop
+    # end _pass
 
-    # origin 0x2000014c
+    # origin 0x2000014c <slave_main>
     2000016c:    10500073                wfi
     20000170:    bff5                    j      0x2000016c # infinite loop
     20000172:    00000013                nop

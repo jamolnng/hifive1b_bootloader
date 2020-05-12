@@ -9,6 +9,7 @@ Disassembly of section .text:
 
 20000002 <exit>:
 20000002:	8082                	ret
+
 20000004:	4081                	li	ra,0
 20000006:	4101                	li	sp,0
 20000008:	4181                	li	gp,0

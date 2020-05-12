@@ -1,5 +1,9 @@
-.global
 .section .init.enter
+  j     _enter
+.global exit
+exit:
+  ret
+.global _enter
 _enter:
   # clear registers
   li    ra, 0
@@ -11,6 +15,8 @@ _enter:
   li    t2, 0
   li    s0, 0
   li    s1, 0
+  li    a0, 0
+  li    a1, 0
   li    a2, 0
   li    a3, 0
   li    a4, 0
@@ -79,8 +85,12 @@ bss_init_loop:
   addi  t0, t0, 4
   bleu  t0, t1, bss_init_loop
 bss_init_end:
+  la    sp, __stack_pointer
+  call  main
+end_pgm:
+  j     end_pgm
 
 .section .init
 .align 2
 trap_entry:
-  ret
+  j     trap_entry
