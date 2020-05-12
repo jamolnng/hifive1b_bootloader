@@ -1,8 +1,4 @@
-.section .init.enter
-  j     _enter
-.global exit
-exit:
-  ret
+.section .init
 .global _enter
 _enter:
   # clear registers
@@ -90,7 +86,6 @@ bss_init_end:
 end_pgm:
   j     end_pgm
 
-.section .init
 .align 2
 trap_entry:
   j     trap_entry
