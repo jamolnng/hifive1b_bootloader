@@ -712,9 +712,9 @@ Disassembly of section .text:
 200007ba:	c04a                	sw	s2,0(sp)
 200007bc:	c606                	sw	ra,12(sp)
 200007be:	84aa                	mv	s1,a0
-200007c0:	10013437          	lui	s0,0x10013
-200007c4:	0004c503          	lbu	a0,0(s1)
-200007c8:	c909                	beqz	a0,200007da <_puts+0x26>
+200007c0:	10013437          	lui	s0,0x10013 # 0x10013000 uart0
+200007c4:	0004c503          	lbu	a0,0(s1) # load first character of string
+200007c8:	c909                	beqz	a0,200007da <_puts+0x26> #
 200007ca:	8801a783          	lw	a5,-1920(gp) # 80000600 <print_to_uart1>
 200007ce:	0485                	addi	s1,s1,1
 200007d0:	cb99                	beqz	a5,200007e6 <_puts+0x32>
@@ -1572,12 +1572,12 @@ Disassembly of section .text:
 2000110c:	8082                	ret
 
 2000110e <bench_rstclk>:
-2000110e:	10014737          	lui	a4,0x10014
-20001112:	433c                	lw	a5,64(a4)
-20001114:	1101                	addi	sp,sp,-32
-20001116:	ce06                	sw	ra,28(sp)
-20001118:	9bf1                	andi	a5,a5,-4
-2000111a:	c33c                	sw	a5,64(a4)
+2000110e:	10014737          	lui	a4,0x10014 # 0x10014000 (QSPI0)
+20001112:	433c                	lw	a5,64(a4) # load frame format (fmt)
+20001114:	1101                	addi	sp,sp,-32 # function stuff
+20001116:	ce06                	sw	ra,28(sp) # function stuff
+20001118:	9bf1                	andi	a5,a5,-4 # fmt & ~(0x00000003)
+2000111a:	c33c                	sw	a5,64(a4) # set protocol to single
 2000111c:	300477f3          	csrrci	a5,mstatus,8
 20001120:	100127b7          	lui	a5,0x10012
 20001124:	0007a423          	sw	zero,8(a5) # 10012008 <_prog_start-0xffedff8>
@@ -1596,6 +1596,7 @@ Disassembly of section .text:
 2000114e:	8ed1                	or	a3,a3,a2
 20001150:	c794                	sw	a3,8(a5)
 20001152:	5fd4                	lw	a3,60(a5)
+
 20001154:	15fd                	addi	a1,a1,-1
 20001156:	8eed                	and	a3,a3,a1
 20001158:	dfd4                	sw	a3,60(a5)

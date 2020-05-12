@@ -391,7 +391,7 @@ Disassembly of section .sec1:
     20000374:    0807a223                sw     zero,132(a5) # 0x10000084 AON_BACKUP1
 
     20000378:    14e7a623                sw     a4,332(a5) # 0x1000014C AON_PMUKEY
-    2000037c:    1407a423                sw     zero,328(a5) # 0x10000148 AON_PMUKEY
+    2000037c:    1407a423                sw     zero,328(a5) # 0x10000148 AON_PMUSLEEP
     # }
     # delay
     20000380:    0200c737                lui    a4,0x200c
@@ -421,10 +421,10 @@ Disassembly of section .sec1:
     200003c8:    00d79463                bne    a5,a3,0x200003d0
     200003cc:    fee666e3                bltu   a2,a4,0x200003b8
 
-    200003d0:    53f000ef                jal    ra,0x2000110e
-    200003d4:    6f8010ef                jal    ra,0x20001acc
+    200003d0:    53f000ef                jal    ra,0x2000110e # bench_rstclk
+    200003d4:    6f8010ef                jal    ra,0x20001acc # esp32_init
     200003d8:    200107b7                lui    a5,0x20010
-    200003dc:    9782                    jalr   a5
+    200003dc:    9782                    jalr   a5 # call users program at 0x20010000
     200003de:    40f2                    lw     ra,28(sp)
     200003e0:    0012d537                lui    a0,0x12d
     200003e4:    68750513                addi   a0,a0,1671 # 0x12d687
@@ -565,11 +565,14 @@ Disassembly of section .sec1:
     20000536:    4501                    li    a0,0
     20000538:    0141                    addi    sp,sp,16
     2000053a:    8082                    ret
-    2000053c:    10023737              lui    a4,0x10023
-    20000540:    431c                    lw    a5,0(a4)
-    20000542:    fe07cfe3              bltz    a5,0x20000540
-    20000546:    c308                    sw    a0,0(a4)
+
+    # <_putc.part.0>
+    2000053c:    10023737                lui     a4,0x10023 # 0x10023000 uart1
+    20000540:    431c                    lw      a5,0(a4) # tx data
+    20000542:    fe07cfe3                bltz    a5,0x20000540 # while tx data is full
+    20000546:    c308                    sw      a0,0(a4) # write char to tx data
     20000548:    8082                    ret
+
     2000054a:    100107b7              lui    a5,0x10010
     2000054e:    d788                    sw    a0,40(a5)
     20000550:    b00027f3              csrr    a5,mcycle
@@ -760,31 +763,43 @@ Disassembly of section .sec1:
     200007ac:    42dc                    lw    a5,4(a3)
     200007ae:    f4f049e3              bgtz    a5,0x20000700
     200007b2:    bfa1                    j    0x2000070a
+
+    # <_puts>
+    # function stuff
     200007b4:    1141                    addi    sp,sp,-16
-    200007b6:    c422                    sw    s0,8(sp)
-    200007b8:    c226                    sw    s1,4(sp)
-    200007ba:    c04a                    sw    s2,0(sp)
-    200007bc:    c606                    sw    ra,12(sp)
-    200007be:    84aa                    mv    s1,a0
-    200007c0:    10013437              lui    s0,0x10013
-    200007c4:    0004c503              lbu    a0,0(s1)
-    200007c8:    c909                    beqz    a0,0x200007da
-    200007ca:    8801a783              lw    a5,-1920(gp)
-    200007ce:    0485                    addi    s1,s1,1
+    200007b6:    c422                    sw      s0,8(sp)
+    200007b8:    c226                    sw      s1,4(sp)
+    200007ba:    c04a                    sw      s2,0(sp)
+    200007bc:    c606                    sw      ra,12(sp)
+    # actual code
+    200007be:    84aa                    mv      s1,a0
+    200007c0:    10013437                lui     s0,0x10013 # 0x10013000 uart0
+    200007c4:    0004c503                lbu     a0,0(s1) # load first character of string
+    200007c8:    c909                    beqz    a0,0x200007da # if first character is null
+    200007ca:    8801a783                lw      a5,-1920(gp) # print_to_uart1
+    200007ce:    0485                    addi    s1,s1,1 # iterate over the string
+    ## if print_to_uart1 == 0
     200007d0:    cb99                    beqz    a5,0x200007e6
-    200007d2:    33ad                    jal    0x2000053c
-    200007d4:    0004c503              lbu    a0,0(s1)
+    ## else
+    200007d2:    33ad                    jal     0x2000053c
+    200007d4:    0004c503                lbu     a0,0(s1)
     200007d8:    f96d                    bnez    a0,0x200007ca
-    200007da:    40b2                    lw    ra,12(sp)
-    200007dc:    4422                    lw    s0,8(sp)
-    200007de:    4492                    lw    s1,4(sp)
-    200007e0:    4902                    lw    s2,0(sp)
+    # function stuff
+    200007da:    40b2                    lw      ra,12(sp)
+    200007dc:    4422                    lw      s0,8(sp)
+    200007de:    4492                    lw      s1,4(sp)
+    200007e0:    4902                    lw      s2,0(sp)
     200007e2:    0141                    addi    sp,sp,16
     200007e4:    8082                    ret
-    200007e6:    401c                    lw    a5,0(s0)
-    200007e8:    fe07cfe3              bltz    a5,0x200007e6
-    200007ec:    c008                    sw    a0,0(s0)
-    200007ee:    bfd9                    j    0x200007c4
+    # origin: 200007d0 if print_to_uart1 == 0
+    # while(txdata < 0) {
+    200007e6:    401c                    lw      a5,0(s0) # tx data
+    200007e8:    fe07cfe3                bltz    a5,0x200007e6
+    # }
+    200007ec:    c008                    sw      a0,0(s0) # write current char to tx data
+    200007ee:    bfd9                    j       0x200007c4 # repeat until current char is null
+    # end <_puts>
+
     200007f0:    1101                    addi    sp,sp,-32
     200007f2:    c84a                    sw    s2,16(sp)
     200007f4:    c452                    sw    s4,8(sp)
@@ -1553,6 +1568,8 @@ Disassembly of section .sec1:
     200010a4:    8082                    ret
     200010a6:    20500513              li    a0,517
     200010aa:    8082                    ret
+
+    # <measure_lfosc_freq>
     200010ac:    100087b7              lui    a5,0x10008
     200010b0:    00060737              lui    a4,0x60
     200010b4:    c798                    sw    a4,8(a5)
@@ -1583,90 +1600,110 @@ Disassembly of section .sec1:
     20001108:    84a1a023              sw    a0,-1984(gp)
     2000110c:    8082                    ret
 
-    # bench_rstclk
-    2000110e:    10014737              lui    a4,0x10014
-    20001112:    433c                    lw    a5,64(a4)
-    20001114:    1101                    addi    sp,sp,-32
-    20001116:    ce06                    sw    ra,28(sp)
-    20001118:    9bf1                    andi    a5,a5,-4
-    2000111a:    c33c                    sw    a5,64(a4)
-    2000111c:    300477f3              csrrci    a5,mstatus,8
-    20001120:    100127b7              lui    a5,0x10012
-    20001124:    0007a423              sw    zero,8(a5) # 0x10012008
-    20001128:    0207ac23              sw    zero,56(a5)
-    2000112c:    8801a703              lw    a4,-1920(gp)
-    20001130:    0007a623              sw    zero,12(a5)
-    20001134:    0407a023              sw    zero,64(a5)
-    20001138:    c35d                    beqz    a4,0x200011de
-    2000113a:    47d8                    lw    a4,12(a5)
-    2000113c:    00840637              lui    a2,0x840
-    20001140:    ff7c05b7              lui    a1,0xff7c0
-    20001144:    8f51                    or    a4,a4,a2
-    20001146:    c7d8                    sw    a4,12(a5)
-    20001148:    4794                    lw    a3,8(a5)
-    2000114a:    10023737              lui    a4,0x10023
-    2000114e:    8ed1                    or    a3,a3,a2
-    20001150:    c794                    sw    a3,8(a5)
-    20001152:    5fd4                    lw    a3,60(a5)
-    20001154:    15fd                    addi    a1,a1,-1
-    20001156:    8eed                    and    a3,a3,a1
-    20001158:    dfd4                    sw    a3,60(a5)
-    2000115a:    5f94                    lw    a3,56(a5)
-    2000115c:    8ed1                    or    a3,a3,a2
-    2000115e:    df94                    sw    a3,56(a5)
-    20001160:    08a00793              li    a5,138
-    20001164:    cf1c                    sw    a5,24(a4)
-    20001166:    67c1                    lui    a5,0x10
-    20001168:    0785                    addi    a5,a5,1
-    2000116a:    c71c                    sw    a5,8(a4)
-    2000116c:    4785                    li    a5,1
-    2000116e:    c75c                    sw    a5,12(a4)
-    20001170:    c602                    sw    zero,12(sp)
-    20001172:    47b2                    lw    a5,12(sp)
-    20001174:    6709                    lui    a4,0x2
-    20001176:    70f70713              addi    a4,a4,1807 # 0x270f
+    # <bench_rstclk>
+    2000110e:    10014737              lui    a4,0x10014 # QSPI0 0x10014000
+    20001112:    433c                  lw     a5,64(a4) # load frame format (fmt)
+    20001114:    1101                  addi   sp,sp,-32 # function stuff
+    20001116:    ce06                  sw     ra,28(sp) # function stuff
+    20001118:    9bf1                  andi   a5,a5,-4 # fmt &= ~(0x00000003) (clear last 2 bits)
+    2000111a:    c33c                  sw     a5,64(a4) # set protocol to single (default value)
+    2000111c:    300477f3              csrrci a5,mstatus,8 # disable interrupts
+    20001120:    100127b7              lui    a5,0x10012 # GPIO 0x10012000
+    20001124:    0007a423              sw     zero,8(a5) # 0x10012008 disable all outputs
+    20001128:    0207ac23              sw     zero,56(a5) # 0x10012038 disable all iof
+    2000112c:    8801a703              lw     a4,-1920(gp) # data at beginning of bss <print_to_uart1>
+    20001130:    0007a623              sw     zero,12(a5) # 0x1001200C turn off all pins
+    20001134:    0407a023              sw     zero,64(a5) # 0x10012040 disable xor all pins
+    ## if print_to_uart1 = 0
+    20001138:    c35d                  beqz   a4,0x200011de
+    ## else
+    # a5 = GPIO 0x10012000
+    2000113a:    47d8                  lw     a4,12(a5) # 0x1001200C (out_val)
+    2000113c:    00840637              lui    a2,0x840 # 0x00840000 (pins 18 uart1rx and 23 uart1tx)
+    20001140:    ff7c05b7              lui    a1,0xff7c0 # 0xFF7C0000
+    20001144:    8f51                  or     a4,a4,a2 # turn on pins 18 and 23
+    20001146:    c7d8                  sw     a4,12(a5) # turn on pins 18 and 23 write
+    20001148:    4794                  lw     a3,8(a5) # 0x10012008 (out_en)
+    2000114a:    10023737              lui    a4,0x10023 # 0x10023000 UART1
+    2000114e:    8ed1                  or     a3,a3,a2 # enable output on pins 18 and 23
+    20001150:    c794                  sw     a3,8(a5) # enable output on pins 18 and 23 write
+    20001152:    5fd4                  lw     a3,60(a5) # 0x1001203C iof_sel
+    # jump from 200011f8
+    # a5 = GPIO 0x10012000
+    # a4 = UART0 0x10013000 or UART1 0x10023000
+    # a3 = 0x1001203C iof_sel
+    # a1 = 0xFFFD0000 or FF7C0000
+    20001154:    15fd                  addi   a1,a1,-1
+    # a1 = ~(UART0_RX | UART0_TX) or ~(UART1_RX | UART1_TX)
+    20001156:    8eed                  and    a3,a3,a1 # select iof0
+    20001158:    dfd4                  sw     a3,60(a5) # select iof0 write
+    2000115a:    5f94                  lw     a3,56(a5) # 0x10012038 iof_en
+    2000115c:    8ed1                  or     a3,a3,a2 # enable iof
+    2000115e:    df94                  sw     a3,56(a5) # enable iof write
+    20001160:    08a00793              li     a5,138 # a5 = 138
+    20001164:    cf1c                  sw     a5,24(a4) # set baud rate divisor. Baud 115200 (115107)
+    20001166:    67c1                  lui    a5,0x10 # 0x10000
+    20001168:    0785                  addi   a5,a5,1 # 0x10001
+    2000116a:    c71c                  sw     a5,8(a4) # enable tx and set txcnt to 1 in txctrl
+    2000116c:    4785                  li     a5,1
+    2000116e:    c75c                  sw     a5,12(a4) # write 1 to rxctrl to enable rx
+    20001170:    c602                  sw     zero,12(sp) # write 0 to 12(sp)?
+    20001172:    47b2                  lw     a5,12(sp) # a5 = 12(sp)? yo compiler why not li a5,0
+    20001174:    6709                  lui    a4,0x2
+    20001176:    70f70713              addi   a4,a4,1807 # 0x270f = 9999
+    # for(a5 = 0; a5 < a4; a5++)
+    # a5 = i
+    # a4 = 9999
+    # who the fuck writes these delay functions
     2000117a:    00f74863              blt    a4,a5,0x2000118a
-    2000117e:    47b2                    lw    a5,12(sp)
-    20001180:    0785                    addi    a5,a5,1
-    20001182:    c63e                    sw    a5,12(sp)
-    20001184:    47b2                    lw    a5,12(sp)
+    2000117e:    47b2                  lw     a5,12(sp)
+    20001180:    0785                  addi   a5,a5,1
+    20001182:    c63e                  sw     a5,12(sp)
+    20001184:    47b2                  lw     a5,12(sp)
     20001186:    fef75ce3              bge    a4,a5,0x2000117e
-    2000118a:    100087b7              lui    a5,0x10008
-    2000118e:    00060737              lui    a4,0x60
-    20001192:    c798                    sw    a4,8(a5)
-    20001194:    4798                    lw    a4,8(a5)
-    20001196:    66c1                    lui    a3,0x10
-    20001198:    8f55                    or    a4,a4,a3
-    2000119a:    c798                    sw    a4,8(a5)
-    2000119c:    3f01                    jal    0x200010ac
+    # end for
+    # 2000117a
+    2000118a:    100087b7              lui    a5,0x10008 # 0x10008000 PRCI
+    2000118e:    00060737              lui    a4,0x60 # 0x00060000 external osc and bypass to 1
+    20001192:    c798                  sw     a4,8(a5) # 0x10008008 pll_cfg to use ext osc
+    20001194:    4798                  lw     a4,8(a5)
+    20001196:    66c1                  lui    a3,0x10 # 0x10000
+    20001198:    8f55                  or     a4,a4,a3 # drive clock with pll
+    2000119a:    c798                  sw     a4,8(a5) # drive clock with pll write
+    2000119c:    3f01                  jal    0x200010ac # <measure_lfosc_freq>
+    # I am unsure what is trying to be printed here
     2000119e:    20002537              lui    a0,0x20002
-    200011a2:    ef850513              addi    a0,a0,-264 # 0x20001ef8
-    200011a6:    e0eff0ef              jal    ra,0x200007b4
+    200011a2:    ef850513              addi   a0,a0,-264 # 0x20001ef8
+    200011a6:    e0eff0ef              jal    ra,0x200007b4 # _puts
     200011aa:    20002537              lui    a0,0x20002
-    200011ae:    f0050513              addi    a0,a0,-256 # 0x20001f00
-    200011b2:    e02ff0ef              jal    ra,0x200007b4
+    200011ae:    f0050513              addi   a0,a0,-256 # 0x20001f00
+    200011b2:    e02ff0ef              jal    ra,0x200007b4 # _puts
     200011b6:    20002537              lui    a0,0x20002
-    200011ba:    f0850513              addi    a0,a0,-248 # 0x20001f08
-    200011be:    df6ff0ef              jal    ra,0x200007b4
+    200011ba:    f0850513              addi   a0,a0,-248 # 0x20001f08
+    200011be:    df6ff0ef              jal    ra,0x200007b4 # _puts
     200011c2:    20002537              lui    a0,0x20002
-    200011c6:    f1050513              addi    a0,a0,-240 # 0x20001f10
-    200011ca:    deaff0ef              jal    ra,0x200007b4
-    200011ce:    40f2                    lw    ra,28(sp)
+    200011c6:    f1050513              addi   a0,a0,-240 # 0x20001f10
+    200011ca:    deaff0ef              jal    ra,0x200007b4 # _puts
+    # print bench clock reset and return
+    200011ce:    40f2                  lw     ra,28(sp) # function stuff
     200011d0:    20002537              lui    a0,0x20002
-    200011d4:    f1c50513              addi    a0,a0,-228 # 0x20001f1c
-    200011d8:    6105                    addi    sp,sp,32
-    200011da:    ddaff06f              j    0x200007b4
-    200011de:    47d8                    lw    a4,12(a5)
-    200011e0:    00030637              lui    a2,0x30
-    200011e4:    fffd05b7              lui    a1,0xfffd0
-    200011e8:    8f51                    or    a4,a4,a2
-    200011ea:    c7d8                    sw    a4,12(a5)
-    200011ec:    4794                    lw    a3,8(a5)
-    200011ee:    10013737              lui    a4,0x10013
-    200011f2:    8ed1                    or    a3,a3,a2
-    200011f4:    c794                    sw    a3,8(a5)
-    200011f6:    5fd4                    lw    a3,60(a5)
-    200011f8:    bfb1                    j    0x20001154
+    200011d4:    f1c50513              addi   a0,a0,-228 # 0x20001f1c
+    200011d8:    6105                  addi   sp,sp,32 # function stuff
+    200011da:    ddaff06f              j      0x200007b4 # _puts
+    # jump from 20001138
+    # a5 = GPIO 0x10012000
+    200011de:    47d8                  lw     a4,12(a5) # 0x1001200C (out_val)
+    200011e0:    00030637              lui    a2,0x30 # 0x00030000 (pins 16 uart0rx and 17 uart0tx)
+    200011e4:    fffd05b7              lui    a1,0xfffd0 # 0xFFFD0000
+    200011e8:    8f51                  or     a4,a4,a2 # turn on pins 16 and 17
+    200011ea:    c7d8                  sw     a4,12(a5) # turn on pins 16 and 17 write
+    200011ec:    4794                  lw     a3,8(a5) # 0x10012008 (out_en)
+    200011ee:    10013737              lui    a4,0x10013 # UART0 0x10013000
+    200011f2:    8ed1                  or     a3,a3,a2 # enable output on pins 16 and 17
+    200011f4:    c794                  sw     a3,8(a5) # enable output on pins 16 and 17 write
+    200011f6:    5fd4                  lw     a3,60(a5) # 0x1001203C iof_sel
+    200011f8:    bfb1                  j      0x20001154
+    # end bench_rstclk
 
     200011fa:    0586                    slli    a1,a1,0x1
     200011fc:    157d                    addi    a0,a0,-1
@@ -2799,6 +2836,8 @@ Disassembly of section .sec2:
     20001f14:    343b3933              0x343b3933
     20001f18:    6d39                    lui    s10,0xe
     20001f1a:    0000                    unimp
+    
+    # Bench Clock Reset Complete\r\n
     20001f1c:    6542                    flw    fa0,16(sp)
     20001f1e:    636e                    flw    ft6,216(sp)
     20001f20:    2068                    fld    fa0,192(s0)
@@ -2809,6 +2848,7 @@ Disassembly of section .sec2:
     20001f32:    656c                    flw    fa1,76(a0)
     20001f34:    6574                    flw    fa3,76(a0)
     20001f36:    0a0d                    addi    s4,s4,3
+    
     20001f38:    0000                    unimp
     20001f3a:    0000                    unimp
     20001f3c:    646e6553              0x646e6553
