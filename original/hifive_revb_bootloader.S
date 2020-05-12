@@ -60,14 +60,14 @@ Disassembly of section .sec1:
     2000005e:    05249f63                bne     s1,s2,0x200000bc # hart id != 0
 
     # hart id == 0
-    # check for something (idk what)
+    # check data rom source staring location is not the target source starting location
     20000062:    00002297                auipc   t0,0x2
     20000066:    2de28293                addi    t0,t0,734 # 0x20002340
     2000006a:    60000317                auipc   t1,0x60000
     2000006e:    f9630313                addi    t1,t1,-106 # 0x80000000
     20000072:    00628e63                beq     t0,t1,0x2000008e # 0x20002340 == 0x80000000 (false)
 
-    # check for something (idk what)
+    # check data target staring location is not greater or equal to target source ending location
     20000076:    85018393                addi    t2,gp,-1968 # 0x800005D0
     2000007a:    00737a63                bgeu    t1,t2,0x2000008e # 0x80000000 >= 0x800005D0 (false)
 
@@ -78,7 +78,7 @@ Disassembly of section .sec1:
     20000088:    0311                    addi    t1,t1,4
     2000008a:    fe736ae3                bltu    t1,t2,0x2000007e
 
-    # check for something (idk what)
+    # check that bss start location is not greater or equal to bss end location
     2000008e:    88018293                addi    t0,gp,-1920 # 0x80000600‬
     20000092:    94818313                addi    t1,gp,-1720 # 0x800006C8‬
     20000096:    0062f763                bgeu    t0,t1,0x200000a4 # 0x80000600‬ >= 0x800006C8‬ (false)
@@ -1577,6 +1577,8 @@ Disassembly of section .sec1:
     20001104:    02a7d533              divu    a0,a5,a0
     20001108:    84a1a023              sw    a0,-1984(gp)
     2000110c:    8082                    ret
+
+    # bench_rstclk
     2000110e:    10014737              lui    a4,0x10014
     20001112:    433c                    lw    a5,64(a4)
     20001114:    1101                    addi    sp,sp,-32
@@ -1660,6 +1662,7 @@ Disassembly of section .sec1:
     200011f4:    c794                    sw    a3,8(a5)
     200011f6:    5fd4                    lw    a3,60(a5)
     200011f8:    bfb1                    j    0x20001154
+
     200011fa:    0586                    slli    a1,a1,0x1
     200011fc:    157d                    addi    a0,a0,-1
     200011fe:    952e                    add    a0,a0,a1
