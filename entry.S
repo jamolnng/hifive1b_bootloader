@@ -42,8 +42,7 @@ _enter:
   la    gp, __global_pointer$ 
 .option pop
 
-  # set interrupt trap vector
-  la    t0, trap_entry
+  # set interrupt trap vector to 0 for infinite loop
   csrwi mtvec, 0
 
   # only counting for hart id = 0
