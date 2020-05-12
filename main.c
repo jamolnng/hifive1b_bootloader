@@ -49,7 +49,7 @@ int main() {
   // code, depending on the environment in which this C code is compiled).
   // By default, this would cause an infinite loop upon exception, which is
   // also "safe" behavior and the debugger can connect.
-  __asm__ volatile("csrwi mtvec, 0");
+  // __asm__ volatile("csrwi mtvec, 0"); // done in entry.S
 
   // 20000256
   if (mmio(AON_CTRL_ADDR, AON_BACKUP15) == BACKUP15_MAGIC) {
