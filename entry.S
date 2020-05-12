@@ -45,9 +45,6 @@ _enter:
   # set interrupt trap vector
   la    t0, trap_entry
   csrw  mtvec, t0
-  
-  # enable software interrupts
-  csrwi  mie, 8
 
   # only counting for hart id = 0
   # since this is for hifive1 rev b
