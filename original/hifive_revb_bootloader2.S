@@ -60,12 +60,15 @@ Disassembly of section .text:
 20000086:	0291                	addi	t0,t0,4
 20000088:	0311                	addi	t1,t1,4
 2000008a:	fe736ae3          	bltu	t1,t2,2000007e <exit+0x7c>
+
 2000008e:	88018293          	addi	t0,gp,-1920 # 80000600 <print_to_uart1>
 20000092:	94818313          	addi	t1,gp,-1720 # 800006c8 <_ebss>
 20000096:	0062f763          	bgeu	t0,t1,200000a4 <exit+0xa2>
+
 2000009a:	0002a023          	sw	zero,0(t0)
 2000009e:	0291                	addi	t0,t0,4
 200000a0:	fe62ede3          	bltu	t0,t1,2000009a <exit+0x98>
+
 200000a4:	020004b7          	lui	s1,0x2000
 200000a8:	4905                	li	s2,1
 200000aa:	0124a023          	sw	s2,0(s1) # 2000000 <_prog_start-0x1e000000>
@@ -1640,6 +1643,7 @@ Disassembly of section .text:
 200011d4:	f1c50513          	addi	a0,a0,-228 # 20001f1c <CSWTCH.4+0x5c>
 200011d8:	6105                	addi	sp,sp,32
 200011da:	ddaff06f          	j	200007b4 <_puts>
+
 200011de:	47d8                	lw	a4,12(a5)
 200011e0:	00030637          	lui	a2,0x30
 200011e4:	fffd05b7          	lui	a1,0xfffd0
@@ -1651,6 +1655,7 @@ Disassembly of section .text:
 200011f4:	c794                	sw	a3,8(a5)
 200011f6:	5fd4                	lw	a3,60(a5)
 200011f8:	bfb1                	j	20001154 <bench_rstclk+0x46>
+# end bench_rstclk
 
 200011fa <spi_min_clk_divisor>:
 200011fa:	0586                	slli	a1,a1,0x1
