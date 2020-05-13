@@ -1,12 +1,11 @@
 #include <stdint.h>
 
-#define BACKUP15_MAGIC 0xD027B007
-#define BACKUP15_MAGIC2 0xBED0BED0
+#define BACKUP15_MAGIC 0xD027B007ul
+#define BACKUP15_MAGIC2 0xBED0BED0ul
 
-#define AON_CTRL_ADDR 0x10000000
+#define AON_CTRL_ADDR 0x10000000ul
 #define AON_BACKUP1 0x084
 #define AON_BACKUP15 0x0BC
-#define AON_WDOGKEY_VALUE 0x51F15E
 #define AON_PMUSLEEPI0 0x120
 #define AON_PMUSLEEPI1 0x124
 #define AON_PMUSLEEPI2 0x128
@@ -17,47 +16,48 @@
 #define AON_PMUSLEEPI7 0x13C
 #define AON_PMUSLEEP 0x148
 #define AON_PMUKEY 0x14C
+#define AON_WDOGKEY_VALUE 0x51F15Eul
 
-#define GPIO_CTRL_ADDR 0x10012000
-#define GPIO_OUTPUT_EN 0x08
-#define GPIO_OUTPUT_VAL 0x0C
-#define GPIO_LOW_IP 0x34
-#define GPIO_IOF_EN 0x38
-#define GPIO_IOF_SEL 0x3C
-#define GPIO_OUTPUT_XOR 0x40
+#define GPIO_CTRL_ADDR 0x10012000ul
+#define GPIO_OUTPUT_EN 0x08u
+#define GPIO_OUTPUT_VAL 0x0Cu
+#define GPIO_LOW_IP 0x34u
+#define GPIO_IOF_EN 0x38u
+#define GPIO_IOF_SEL 0x3Cu
+#define GPIO_OUTPUT_XOR 0x40u
 
-#define CLINT_CTRL_ADDR 0x02000000
-#define CLINT_MTIMECMP 0x4000
-#define CLINT_MTIME 0xBFF8
+#define CLINT_CTRL_ADDR 0x02000000ul
+#define CLINT_MTIMECMP 0x4000u
+#define CLINT_MTIME 0xBFF8u
 
-#define QSPI0_CTRL_ADDR 0x10014000
-#define SPI_FMT 0x40
-#define SPI_PROTO_SINGLE 0x0
-#define SPI_PROTO_DUAL 0x1
-#define SPI_PROTO_QUAD 0x2
-#define SPI_PROTO_MASK 0x3
+#define QSPI0_CTRL_ADDR 0x10014000ul
+#define SPI_FMT 0x40u
+#define SPI_PROTO_SINGLE 0x0u
+#define SPI_PROTO_DUAL 0x1u
+#define SPI_PROTO_QUAD 0x2u
+#define SPI_PROTO_MASK 0x3u
 
-#define UART0_CTRL_ADDR 0x10013000
-#define UART1_CTRL_ADDR 0x10023000
-#define UART_TXDATA 0x00
-#define UART_RXDATA 0x04
-#define UART_TX_CTRL 0x08
-#define UART_RX_CTRL 0x0C
-#define UART_DIV 0x18
-#define UART_RXTX_EN 0x1
+#define UART0_CTRL_ADDR 0x10013000ul
+#define UART1_CTRL_ADDR 0x10023000ul
+#define UART_TXDATA 0x00u
+#define UART_RXDATA 0x04u
+#define UART_TX_CTRL 0x08u
+#define UART_RX_CTRL 0x0Cu
+#define UART_DIV 0x18u
+#define UART_RXTX_EN 0x1u
 
-#define PRCI_CTRL_ADDR 0x10008000
-#define PRCI_PLL_CFG 0x08
-#define PLL_SEL 16
-#define PLL_REF_SEL 17
-#define PLL_BYPASS 18
+#define PRCI_CTRL_ADDR 0x10008000ul
+#define PRCI_PLL_CFG 0x08u
+#define PLL_SEL 16u
+#define PLL_REF_SEL 17u
+#define PLL_BYPASS 18u
 
-#define GREEN_LED 0x00080000
-#define RED_LED 0x00400000
-#define UART0_RX 0x10000
-#define UART0_TX 0x20000
-#define UART1_RX 0x40000
-#define UART1_TX 0x800000
+#define GREEN_LED 0x00080000ul
+#define RED_LED 0x00400000ul
+#define UART0_RX 0x10000u
+#define UART0_TX 0x20000u
+#define UART1_RX 0x40000u
+#define UART1_TX 0x800000ul
 
 // mmio (memory mapped i/o) macro
 #define mmio32(reg, offset) (*(volatile uint32_t *)((reg) + (offset)))
@@ -76,7 +76,7 @@ void measure_lfosc_freq();
 void _puts(const char *);
 
 int main() {
-  uint32_t then;
+  uint64_t then;
 
   // Restore the default mtvec (which may have been set by initialization
   // code, depending on the environment in which this C code is compiled).

@@ -33,8 +33,6 @@ _enter:
   li    t4, 0
   li    t5, 0
   li    t6, 0
-  # let the compiler no that there is no valid return address
-  .cfi_undefined ra
   
   # set global pointer
 .option push
@@ -51,9 +49,9 @@ _enter:
 
   # load .data into ram
 data_init:
-  la    t0, __data_source_start
-  la    t1, __data_target_start
-  la    t2, __data_target_end
+  la    t0, _data_lma
+  la    t1, _data
+  la    t2, _edata
   # check data rom source staring location is not the target source starting location
   beq   t0, t1, data_init_end
   # check data target staring location is not greater or equal to target source ending location
@@ -68,15 +66,15 @@ data_init_end:
 
   # load zeros into .bss
 bss_init:
-  la    t0, __bss_start
-  la    t1, __bss_end
+  la    t0, _bss
+  la    t1, _ebss
   bgeu  t0, t1, bss_init_end
 bss_init_loop:
   sw    x0, 0(t0)
   addi  t0, t0, 4
   bleu  t0, t1, bss_init_loop
 bss_init_end:
-  la    sp, __stack_pointer
+  la    sp, _sp
   call  main
 end_pgm:
   j     end_pgm

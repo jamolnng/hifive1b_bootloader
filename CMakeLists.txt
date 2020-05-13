@@ -44,12 +44,12 @@ add_executable(${PROJECT_NAME} main.c entry.S)
 add_custom_target(${PROJECT_NAME}hex
     ALL
     BYPRODUCTS "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.hex"
-    COMMAND ${tools_dir}/riscv64-unknown-elf-gcc/bin/riscv64-unknown-elf-objcopy${CMAKE_EXECUTABLE_SUFFIX} -S -O ihex $<TARGET_FILE:${name}> "${CMAKE_CURRENT_BINARY_DIR}/${name}.hex"
+    COMMAND ${tools_dir}/riscv64-unknown-elf-gcc/bin/riscv64-unknown-elf-objcopy${CMAKE_EXECUTABLE_SUFFIX} -S -O ihex $<TARGET_FILE:${PROJECT_NAME}> "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.hex"
 )
 add_custom_target(${PROJECT_NAME}asm
     ALL
     BYPRODUCTS "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.S"
-    COMMAND ${tools_dir}/riscv64-unknown-elf-gcc/bin/riscv64-unknown-elf-objdump${CMAKE_EXECUTABLE_SUFFIX} -dSC $<TARGET_FILE:${name}> > "${CMAKE_CURRENT_BINARY_DIR}/${name}.S"
+    COMMAND ${tools_dir}/riscv64-unknown-elf-gcc/bin/riscv64-unknown-elf-objdump${CMAKE_EXECUTABLE_SUFFIX} -dSC $<TARGET_FILE:${PROJECT_NAME}> > "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.S"
 )
 set_target_properties(${PROJECT_NAME}hex PROPERTIES ADDITIONAL_CLEAN_FILES "${PROJECT_NAME}.hex")
 set_target_properties(${PROJECT_NAME}asm PROPERTIES ADDITIONAL_CLEAN_FILES "${PROJECT_NAME}.S")
