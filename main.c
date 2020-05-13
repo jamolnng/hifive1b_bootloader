@@ -1,9 +1,9 @@
 #include <stdint.h>
 
-#define BACKUP15_MAGIC 0xD027B007ul
-#define BACKUP15_MAGIC2 0xBED0BED0ul
+#define BACKUP15_MAGIC 0xD027B007u
+#define BACKUP15_MAGIC2 0xBED0BED0u
 
-#define AON_CTRL_ADDR 0x10000000ul
+#define AON_CTRL_ADDR 0x10000000u
 #define AON_BACKUP1 0x084
 #define AON_BACKUP15 0x0BC
 #define AON_PMUSLEEPI0 0x120
@@ -16,9 +16,10 @@
 #define AON_PMUSLEEPI7 0x13C
 #define AON_PMUSLEEP 0x148
 #define AON_PMUKEY 0x14C
-#define AON_WDOGKEY_VALUE 0x51F15Eul
+#define AON_WDOGKEY_VALUE 0x51F15Eu
 
-#define GPIO_CTRL_ADDR 0x10012000ul
+#define GPIO_CTRL_ADDR 0x10012000u
+#define GPIO_INPUT_EN 0x04u
 #define GPIO_OUTPUT_EN 0x08u
 #define GPIO_OUTPUT_VAL 0x0Cu
 #define GPIO_LOW_IP 0x34u
@@ -26,19 +27,34 @@
 #define GPIO_IOF_SEL 0x3Cu
 #define GPIO_OUTPUT_XOR 0x40u
 
-#define CLINT_CTRL_ADDR 0x02000000ul
+#define CLINT_CTRL_ADDR 0x02000000u
 #define CLINT_MTIMECMP 0x4000u
 #define CLINT_MTIME 0xBFF8u
 
-#define QSPI0_CTRL_ADDR 0x10014000ul
+#define QSPI0_CTRL_ADDR 0x10014000u
+#define SPI1_CTRL_ADDR 0x10024000u
+#define SPI_SCKDIV 0x00u
+#define SPI_CSID 0x10u
+#define SPI_CSMODE 0x18
+#define SPI_DELAY1 0x28
 #define SPI_FMT 0x40u
-#define SPI_PROTO_SINGLE 0x0u
-#define SPI_PROTO_DUAL 0x1u
-#define SPI_PROTO_QUAD 0x2u
-#define SPI_PROTO_MASK 0x3u
+#define SPI_RXDATA 0x4Cu
+#define SPI_FCTRL 0x60u
 
-#define UART0_CTRL_ADDR 0x10013000ul
-#define UART1_CTRL_ADDR 0x10023000ul
+#define SPI_FMT_PROTO_SINGLE 0x0u
+#define SPI_FMT_PROTO_DUAL 0x1u
+#define SPI_FMT_PROTO_QUAD 0x2u
+#define SPI_FMT_PROTO_MASK 0x3u
+#define SPI_FMT_ENDIAN_BIG 0x0u
+#define SPI_FMT_ENDIAN_LIL 0x1u
+#define SPI_FMT_DIR_NORMAL 0x0u
+#define SPI_FMT_LEN_SHIFT 16u
+
+#define SPI_CSMODE_AUTO 0x0u
+#define SPI_CSMODE_MASK 0x3u
+
+#define UART0_CTRL_ADDR 0x10013000u
+#define UART1_CTRL_ADDR 0x10023000u
 #define UART_TXDATA 0x00u
 #define UART_RXDATA 0x04u
 #define UART_TX_CTRL 0x08u
@@ -46,20 +62,29 @@
 #define UART_DIV 0x18u
 #define UART_RXTX_EN 0x1u
 
-#define PRCI_CTRL_ADDR 0x10008000ul
+#define PRCI_CTRL_ADDR 0x10008000u
 #define PRCI_PLL_CFG 0x08u
 #define PLL_SEL 16u
 #define PLL_REF_SEL 17u
 #define PLL_BYPASS 18u
 
-#define GREEN_LED 0x00080000ul
-#define RED_LED 0x00400000ul
-#define UART0_RX 0x10000u
-#define UART0_TX 0x20000u
-#define UART1_RX 0x40000u
-#define UART1_TX 0x800000ul
+#define GREEN_LED 0x00080000u
+#define RED_LED 0x00400000u
+#define PIN_10 0x400
+
+// io functions
+#define UART0_RX 0x00010000u
+#define UART0_TX 0x00020000u
+#define UART1_RX 0x00040000u
+#define UART1_TX 0x00800000u
+#define SPI1_DQ0 0x00000008u
+#define SPI1_DQ1 0x00000010u
+#define SPI1_SCK 0x00000020u
+#define SPI1_CS2 0x00000200u
 
 // mmio (memory mapped i/o) macro
+#define mmio8(reg, offset) (*(volatile uint8_t *)((reg) + (offset)))
+#define mmio16(reg, offset) (*(volatile uint16_t *)((reg) + (offset)))
 #define mmio32(reg, offset) (*(volatile uint32_t *)((reg) + (offset)))
 #define mmio64(reg, offset) (*(volatile uint64_t *)((reg) + (offset)))
 #define mmio mmio32
@@ -71,9 +96,23 @@
 #define PROC_START_ADDR 0x20010000
 
 void bench_rstclk();
-void esp32_init();
 void measure_lfosc_freq();
-void _puts(const char *);
+void _puts(const char *str);
+void esp32_init();
+int32_t at_sendrecv(uint32_t spi, const char *str, uint32_t timeout);
+int32_t at_send(uint32_t spi, const char *str, uint32_t timeout);
+int32_t at_recv(uint32_t spi);
+int32_t at_sendflag(uint32_t spi, char at_flag);
+int32_t spi_transceive_one(uint32_t spi, int32_t num_xfers,
+                           int32_t check_ready);
+uint32_t strlen(const char *str);
+
+uint32_t print_to_uart1 = 0;
+uint32_t lfosc_freq = 32768;
+uint32_t esp32_diag_mode = 1;
+
+char tx_buf[64];
+char rx_buf[128];
 
 int main() {
   uint64_t then;
@@ -199,12 +238,11 @@ int main() {
   return 1234567;
 }
 
-uint32_t print_to_uart1 = 0;
-
 // 2000110e
 void bench_rstclk() {
   // set spi to single mode
-  mmio(QSPI0_CTRL_ADDR, SPI_FMT) &= ~(SPI_PROTO_MASK) | SPI_PROTO_SINGLE;
+  mmio(QSPI0_CTRL_ADDR, SPI_FMT) &=
+      (~(SPI_FMT_PROTO_MASK) | SPI_FMT_PROTO_SINGLE);
   // disable interrupts
   __asm__ volatile("csrci mstatus, 8");
   // turn off and disable all pins
@@ -253,11 +291,6 @@ void bench_rstclk() {
   _puts("Bench Clock Reset Complete\r\n");
 }
 
-void esp32_init() {
-  // todo
-}
-
-uint32_t lfosc_freq;
 // 200010ac
 void measure_lfosc_freq() {
   mtime_lo = 0;
@@ -287,4 +320,89 @@ void _puts(const char *str) {
     mmio(uart, UART_TXDATA) = (uint32_t)*str;
     str++;
   }
+}
+
+void esp32_init() {
+  mmio(GPIO_CTRL_ADDR, GPIO_IOF_SEL) &=
+      ~(SPI1_DQ0 | SPI1_DQ1 | SPI1_SCK | SPI1_CS2);
+  mmio(GPIO_CTRL_ADDR, GPIO_IOF_EN) &=
+      (SPI1_DQ0 | SPI1_DQ1 | SPI1_SCK | SPI1_CS2);
+  // enable input on pin 10
+  mmio(GPIO_CTRL_ADDR, GPIO_INPUT_EN) |= PIN_10;
+
+  // spi
+  mmio(SPI1_CTRL_ADDR, SPI_SCKDIV) = 100u;
+  // frame format (proto: single, msb first, normal, 8 bit len)
+  mmio(SPI1_CTRL_ADDR, SPI_FMT) =
+      (SPI_FMT_PROTO_SINGLE | SPI_FMT_ENDIAN_BIG | SPI_FMT_DIR_NORMAL |
+       (8 << SPI_FMT_LEN_SHIFT));
+  // set csid to 2
+  mmio(SPI1_CTRL_ADDR, SPI_CSID) = 2u;
+  // disable direct memory mapping
+  mmio(SPI1_CTRL_ADDR, SPI_FCTRL) &= ~(1u);
+  // set delay1 intercs to 0
+  mmio8(SPI1_CTRL_ADDR, SPI_DELAY1) = 0u;
+  // set csmode to AUTO
+  mmio(SPI1_CTRL_ADDR, SPI_CSMODE) &= (~SPI_CSMODE_MASK | SPI_CSMODE_AUTO);
+
+  // read all current rxdata
+  while (mmio(SPI1_CTRL_ADDR, SPI_RXDATA) > 0) {
+  }
+
+  _puts("\r\n");
+  at_sendrecv(SPI1_CTRL_ADDR, "ATE0\r\n", 100);
+  at_sendrecv(SPI1_CTRL_ADDR, "AT+BLEINIT=0\r\n", 100);
+  at_sendrecv(SPI1_CTRL_ADDR, "AT+CWMODE=0\r\n", 100);
+  _puts("\r\n");
+}
+
+int32_t at_sendrecv(uint32_t spi, const char *cmd, uint32_t timeout) {
+  int32_t err;
+  err = at_send(spi, cmd, timeout);
+  if (err != 0) {
+    return err;
+  }
+  err = at_recv(spi);
+  return err;
+}
+
+int32_t at_send(uint32_t spi, const char *str, uint32_t timeout) {
+  uint32_t len = strlen(str);
+  int32_t err;
+  if (esp32_diag_mode == 0) {
+  } else {
+    err = at_sendflag(spi, (char)2);
+    if (err != 0) {
+      return err;
+    }
+    if (esp32_diag_mode < 2) {
+    } else {
+      uint32_t tmp = len << 16;
+      tmp = tmp >> 16;
+    }
+  }
+  return 0;
+}
+
+int32_t at_recv(uint32_t spi) {
+  // todo
+  return 0;
+}
+
+int32_t at_sendflag(uint32_t spi, char at_flag) {
+  // todo
+  return 0;
+}
+
+int32_t spi_transceive_one(uint32_t spi, int32_t num_xfers,
+                           int32_t check_ready) {
+  // todo
+  return 0;
+}
+
+uint32_t strlen(const char *str) {
+  uint32_t i;
+  for (i = 0; str[i] != '\0'; i++)
+    ;
+  return i;
 }

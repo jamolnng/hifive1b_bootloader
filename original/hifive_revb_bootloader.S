@@ -1901,6 +1901,8 @@ Disassembly of section .sec1:
     20001416:    4501                    li    a0,0
     20001418:    0141                    addi    sp,sp,16
     2000141a:    8082                    ret
+
+    # <at_sendflag>
     2000141c:    7179                    addi    sp,sp,-48
     2000141e:    d422                    sw    s0,40(sp)
     20001420:    88818413              addi    s0,gp,-1912
@@ -2056,10 +2058,13 @@ Disassembly of section .sec1:
     200015e2:    9d2ff0ef              jal    ra,0x200007b4
     200015e6:    04044783              lbu    a5,64(s0)
     200015ea:    bdfd                    j    0x200014e8
-    200015ec:    7179                    addi    sp,sp,-48
+    # end <at_sendflag>
+
+    # <at_send>
+    200015ec:    7179                    addi  sp,sp,-48
     200015ee:    cc52                    sw    s4,24(sp)
-    200015f0:    8a2a                    mv    s4,a0
-    200015f2:    852e                    mv    a0,a1
+    200015f0:    8a2a                    mv    s4,a0 # s4 = spi
+    200015f2:    852e                    mv    a0,a1 # a0 = str
     200015f4:    d422                    sw    s0,40(sp)
     200015f6:    ce4e                    sw    s3,28(sp)
     200015f8:    ca56                    sw    s5,20(sp)
@@ -2070,55 +2075,63 @@ Disassembly of section .sec1:
     20001602:    c65e                    sw    s7,12(sp)
     20001604:    c462                    sw    s8,8(sp)
     20001606:    8aae                    mv    s5,a1
-    20001608:    8b32                    mv    s6,a2
-    2000160a:    798000ef              jal    ra,0x20001da2
-    2000160e:    8441a783              lw    a5,-1980(gp)
-    20001612:    89aa                    mv    s3,a0
-    20001614:    e3dd                    bnez    a5,0x200016ba
-    20001616:    4589                    li    a1,2
-    20001618:    8552                    mv    a0,s4
-    2000161a:    3509                    jal    0x2000141c
-    2000161c:    892a                    mv    s2,a0
-    2000161e:    e149                    bnez    a0,0x200016a0
-    20001620:    8441a703              lw    a4,-1980(gp)
+    20001608:    8b32                    mv    s6,a2 # s6 = timeout
+    2000160a:    798000ef                jal   ra,0x20001da2 # <strlen>
+    2000160e:    8441a783                lw    a5,-1980(gp) # 800005c4 <esp32_diag_mode>
+    20001612:    89aa                    mv    s3,a0 # s3 = strlen(str)
+    ## if esp32_diag_mode != 0
+    20001614:    e3dd                    bnez  a5,0x200016ba
+    ## else
+    20001616:    4589                    li    a1,2 # a1 = 2
+    20001618:    8552                    mv    a0,s4 # a0 = spi
+    2000161a:    3509                    jal   0x2000141c # <at_sendflag>
+    2000161c:    892a                    mv    s2,a0 # s2 = return value
+    ## if at_sendflag(spi, 2) != 0 return
+    2000161e:    e149                    bnez  a0,0x200016a0
+    ## else
+    20001620:    8441a703                lw    a4,-1980(gp) # 800005c4 <esp32_diag_mode>
     20001624:    4789                    li    a5,2
-    20001626:    0ee7ef63              bltu    a5,a4,0x20001724
-    2000162a:    01099b93              slli    s7,s3,0x10
-    2000162e:    410bdb93              srai    s7,s7,0x10
-    20001632:    88818493              addi    s1,gp,-1912
-    20001636:    407bd793              srai    a5,s7,0x7
-    2000163a:    00f480a3              sb    a5,1(s1)
-    2000163e:    6791                    lui    a5,0x4
-    20001640:    10078793              addi    a5,a5,256 # 0x4100
-    20001644:    00f49123              sh    a5,2(s1)
-    20001648:    07f9f993              andi    s3,s3,127
-    2000164c:    4605                    li    a2,1
-    2000164e:    4591                    li    a1,4
-    20001650:    8552                    mv    a0,s4
-    20001652:    01348023              sb    s3,0(s1)
-    20001656:    33a1                    jal    0x2000139e
-    20001658:    8441a703              lw    a4,-1980(gp)
+    ## if esp32_diag_mode < 2
+    20001626:    0ee7ef63                bltu  a5,a4,0x20001724
+    ## else
+    2000162a:    01099b93                slli  s7,s3,0x10 # s7 = strlen(str) << 16
+    2000162e:    410bdb93                srai  s7,s7,0x10 # s7 = s7 >> 16
+    20001632:    88818493                addi  s1,gp,-1912 # 80000608 <tx_buf>
+    20001636:    407bd793                srai  a5,s7,0x7 # s5 = s7 >> 7
+    2000163a:    00f480a3                sb    a5,1(s1)
+    2000163e:    6791                    lui   a5,0x4
+    20001640:    10078793                addi  a5,a5,256 # 0x4100
+    20001644:    00f49123                sh    a5,2(s1)
+    20001648:    07f9f993                andi  s3,s3,127 # convert strlen to byte
+    2000164c:    4605                    li    a2,1 # a2 = 1
+    2000164e:    4591                    li    a1,4 # a1 = 4
+    20001650:    8552                    mv    a0,s4 # a0 = spi
+    20001652:    01348023                sb    s3,0(s1) # tx_buf[0] = strlen(str)
+    20001656:    33a1                    jal   0x2000139e # <spi_transceive_one>
+    20001658:    8441a703                lw    a4,-1980(gp) # 800005c4 <esp32_diag_mode>
     2000165c:    4789                    li    a5,2
-    2000165e:    0ce7ea63              bltu    a5,a4,0x20001732
+    2000165e:    0ce7ea63                bltu  a5,a4,0x20001732
     20001662:    855a                    mv    a0,s6
-    20001664:    31f5                    jal    0x20001350
-    20001666:    e13d                    bnez    a0,0x200016cc
-    20001668:    8441a703              lw    a4,-1980(gp)
+    20001664:    31f5                    jal   0x20001350
+    20001666:    e13d                    bnez  a0,0x200016cc
+    20001668:    8441a703                lw    a4,-1980(gp) # 800005c4 <esp32_diag_mode>
     2000166c:    4789                    li    a5,2
-    2000166e:    0ce7ed63              bltu    a5,a4,0x20001748
-    20001672:    0404c703              lbu    a4,64(s1)
-    20001676:    06200793              li    a5,98
-    2000167a:    06f70563              beq    a4,a5,0x200016e4
-    2000167e:    20002537              lui    a0,0x20002
-    20001682:    06450513              addi    a0,a0,100 # 0x20002064
-    20001686:    04048413              addi    s0,s1,64
-    2000168a:    92aff0ef              jal    ra,0x200007b4
-    2000168e:    04448493              addi    s1,s1,68
-    20001692:    00044503              lbu    a0,0(s0)
-    20001696:    0405                    addi    s0,s0,1
-    20001698:    3181                    jal    0x200012d8
-    2000169a:    fe941ce3              bne    s0,s1,0x20001692
+    2000166e:    0ce7ed63                bltu  a5,a4,0x20001748
+    20001672:    0404c703                lbu   a4,64(s1)
+    20001676:    06200793                li    a5,98
+    2000167a:    06f70563                beq   a4,a5,0x200016e4
+    2000167e:    20002537                lui   a0,0x20002
+    20001682:    06450513                addi  a0,a0,100 # 0x20002064
+    20001686:    04048413                addi  s0,s1,64
+    2000168a:    92aff0ef                jal   ra,0x200007b4
+    2000168e:    04448493                addi  s1,s1,68
+    20001692:    00044503                lbu   a0,0(s0)
+    20001696:    0405                    addi  s0,s0,1
+    20001698:    3181                    jal   0x200012d8
+    2000169a:    fe941ce3                bne   s0,s1,0x20001692
     2000169e:    4905                    li    s2,1
+    ## at_sendflag(spi) != 0
+    # (return)
     200016a0:    50b2                    lw    ra,44(sp)
     200016a2:    5422                    lw    s0,40(sp)
     200016a4:    854a                    mv    a0,s2
@@ -2130,66 +2143,70 @@ Disassembly of section .sec1:
     200016b0:    4b42                    lw    s6,16(sp)
     200016b2:    4bb2                    lw    s7,12(sp)
     200016b4:    4c22                    lw    s8,8(sp)
-    200016b6:    6145                    addi    sp,sp,48
+    200016b6:    6145                    addi  sp,sp,48
     200016b8:    8082                    ret
+    ## esp32_diag_mode != 0
     200016ba:    8556                    mv    a0,s5
-    200016bc:    3989                    jal    0x2000130e
-    200016be:    20002537              lui    a0,0x20002
-    200016c2:    02450513              addi    a0,a0,36 # 0x20002024
-    200016c6:    8eeff0ef              jal    ra,0x200007b4
-    200016ca:    b7b1                    j    0x20001616
-    200016cc:    20002537              lui    a0,0x20002
-    200016d0:    03450513              addi    a0,a0,52 # 0x20002034
-    200016d4:    8e0ff0ef              jal    ra,0x200007b4
-    200016d8:    0404c703              lbu    a4,64(s1)
-    200016dc:    06200793              li    a5,98
-    200016e0:    f8f71fe3              bne    a4,a5,0x2000167e
+    200016bc:    3989                    jal   0x2000130e
+    200016be:    20002537                lui   a0,0x20002
+    200016c2:    02450513                addi  a0,a0,36 # 0x20002024
+    200016c6:    8eeff0ef                jal   ra,0x200007b4
+    200016ca:    b7b1                    j     0x20001616
+    200016cc:    20002537                lui   a0,0x20002
+    200016d0:    03450513                addi  a0,a0,52 # 0x20002034
+    200016d4:    8e0ff0ef                jal   ra,0x200007b4
+    200016d8:    0404c703                lbu   a4,64(s1)
+    200016dc:    06200793                li    a5,98
+    200016e0:    f8f71fe3                bne   a4,a5,0x2000167e
     200016e4:    865e                    mv    a2,s7
     200016e6:    85d6                    mv    a1,s5
-    200016e8:    88818513              addi    a0,gp,-1912
-    200016ec:    6f2000ef              jal    ra,0x20001dde
+    200016e8:    88818513                addi  a0,gp,-1912
+    200016ec:    6f2000ef                jal   ra,0x20001dde
     200016f0:    4605                    li    a2,1
     200016f2:    85de                    mv    a1,s7
     200016f4:    8552                    mv    a0,s4
-    200016f6:    3165                    jal    0x2000139e
-    200016f8:    0404c703              lbu    a4,64(s1)
-    200016fc:    04300793              li    a5,67
-    20001700:    04f70b63              beq    a4,a5,0x20001756
+    200016f6:    3165                    jal   0x2000139e
+    200016f8:    0404c703                lbu   a4,64(s1)
+    200016fc:    04300793                li    a5,67
+    20001700:    04f70b63                beq   a4,a5,0x20001756
     20001704:    855a                    mv    a0,s6
-    20001706:    31a9                    jal    0x20001350
-    20001708:    ed39                    bnez    a0,0x20001766
-    2000170a:    8441a703              lw    a4,-1980(gp)
+    20001706:    31a9                    jal   0x20001350
+    20001708:    ed39                    bnez  a0,0x20001766
+    2000170a:    8441a703                lw    a4,-1980(gp) # 800005c4 <esp32_diag_mode>
     2000170e:    4789                    li    a5,2
     20001710:    4901                    li    s2,0
-    20001712:    f8e7f7e3              bgeu    a5,a4,0x200016a0
-    20001716:    20002537              lui    a0,0x20002
-    2000171a:    0a450513              addi    a0,a0,164 # 0x200020a4
-    2000171e:    896ff0ef              jal    ra,0x200007b4
-    20001722:    bfbd                    j    0x200016a0
-    20001724:    20002537              lui    a0,0x20002
-    20001728:    02850513              addi    a0,a0,40 # 0x20002028
-    2000172c:    888ff0ef              jal    ra,0x200007b4
-    20001730:    bded                    j    0x2000162a
-    20001732:    20002537              lui    a0,0x20002
-    20001736:    05450513              addi    a0,a0,84 # 0x20002054
-    2000173a:    87aff0ef              jal    ra,0x200007b4
+    20001712:    f8e7f7e3                bgeu  a5,a4,0x200016a0 # return
+    20001716:    20002537                lui   a0,0x20002
+    2000171a:    0a450513                addi  a0,a0,164 # 0x200020a4
+    2000171e:    896ff0ef                jal   ra,0x200007b4
+    20001722:    bfbd                    j     0x200016a0 # return
+    20001724:    20002537                lui   a0,0x20002
+    20001728:    02850513                addi  a0,a0,40 # 0x20002028
+    2000172c:    888ff0ef                jal   ra,0x200007b4
+    20001730:    bded                    j     0x2000162a
+    20001732:    20002537                lui   a0,0x20002
+    20001736:    05450513                addi  a0,a0,84 # 0x20002054
+    2000173a:    87aff0ef                jal   ra,0x200007b4
     2000173e:    855a                    mv    a0,s6
-    20001740:    3901                    jal    0x20001350
-    20001742:    f20503e3              beqz    a0,0x20001668
-    20001746:    b759                    j    0x200016cc
-    20001748:    20002537              lui    a0,0x20002
-    2000174c:    05050513              addi    a0,a0,80 # 0x20002050
-    20001750:    864ff0ef              jal    ra,0x200007b4
-    20001754:    bf39                    j    0x20001672
-    20001756:    20002537              lui    a0,0x20002
-    2000175a:    07850513              addi    a0,a0,120 # 0x20002078
-    2000175e:    856ff0ef              jal    ra,0x200007b4
+    20001740:    3901                    jal   0x20001350
+    20001742:    f20503e3                beqz  a0,0x20001668
+    20001746:    b759                    j     0x200016cc
+    20001748:    20002537                lui   a0,0x20002
+    2000174c:    05050513                addi  a0,a0,80 # 0x20002050
+    20001750:    864ff0ef                jal   ra,0x200007b4
+    20001754:    bf39                    j     0x20001672
+    20001756:    20002537                lui   a0,0x20002
+    2000175a:    07850513                addi  a0,a0,120 # 0x20002078
+    2000175e:    856ff0ef                jal   ra,0x200007b4
     20001762:    4905                    li    s2,1
-    20001764:    bf35                    j    0x200016a0
-    20001766:    20002537              lui    a0,0x20002
-    2000176a:    08c50513              addi    a0,a0,140 # 0x2000208c
-    2000176e:    846ff0ef              jal    ra,0x200007b4
-    20001772:    b73d                    j    0x200016a0
+    20001764:    bf35                    j     0x200016a0 # return
+    20001766:    20002537                lui   a0,0x20002
+    2000176a:    08c50513                addi  a0,a0,140 # 0x2000208c
+    2000176e:    846ff0ef                jal   ra,0x200007b4
+    20001772:    b73d                    j     0x200016a0 # return
+    # end <at_send>
+
+    # <at_recv_one>
     20001774:    7139                    addi    sp,sp,-64
     20001776:    da26                    sw    s1,52(sp)
     20001778:    88818493              addi    s1,gp,-1912
@@ -2360,6 +2377,9 @@ Disassembly of section .sec1:
     20001974:    fd450513              addi    a0,a0,-44 # 0x20001fd4
     20001978:    e3dfe0ef              jal    ra,0x200007b4
     2000197c:    b789                    j    0x200018be
+    # end <at_recv_one>
+
+    # <at_recv>
     2000197e:    7179                    addi    sp,sp,-48
     20001980:    ce4e                    sw    s3,28(sp)
     20001982:    cc52                    sw    s4,24(sp)
@@ -2467,94 +2487,107 @@ Disassembly of section .sec1:
     20001aa4:    1c850513              addi    a0,a0,456 # 0x200021c8
     20001aa8:    d0dfe0ef              jal    ra,0x200007b4
     20001aac:    bf71                    j    0x20001a48
-    20001aae:    1141                    addi    sp,sp,-16
-    20001ab0:    c422                    sw    s0,8(sp)
-    20001ab2:    c606                    sw    ra,12(sp)
-    20001ab4:    842a                    mv    s0,a0
-    20001ab6:    3e1d                    jal    0x200015ec
-    20001ab8:    c509                    beqz    a0,0x20001ac2
-    20001aba:    40b2                    lw    ra,12(sp)
-    20001abc:    4422                    lw    s0,8(sp)
-    20001abe:    0141                    addi    sp,sp,16
+    # end <at_recv>
+
+    # <at_sendrecv>
+    20001aae:    1141                    addi   sp,sp,-16 # function stuff
+    20001ab0:    c422                    sw     s0,8(sp) # function stuff
+    20001ab2:    c606                    sw     ra,12(sp) # function stuff
+    20001ab4:    842a                    mv     s0,a0 # function stuff
+    20001ab6:    3e1d                    jal    0x200015ec # <at_send>
+    20001ab8:    c509                    beqz   a0,0x20001ac2 # if return == 0
+    20001aba:    40b2                    lw     ra,12(sp)
+    20001abc:    4422                    lw     s0,8(sp)
+    20001abe:    0141                    addi   sp,sp,16
     20001ac0:    8082                    ret
-    20001ac2:    8522                    mv    a0,s0
-    20001ac4:    4422                    lw    s0,8(sp)
-    20001ac6:    40b2                    lw    ra,12(sp)
-    20001ac8:    0141                    addi    sp,sp,16
-    20001aca:    bd55                    j    0x2000197e
-    20001acc:    100127b7              lui    a5,0x10012
-    20001ad0:    5fd4                    lw    a3,60(a5)
-    20001ad2:    1141                    addi    sp,sp,-16
-    20001ad4:    c606                    sw    ra,12(sp)
-    20001ad6:    c422                    sw    s0,8(sp)
-    20001ad8:    9add                    andi    a3,a3,-9
-    20001ada:    dfd4                    sw    a3,60(a5)
-    20001adc:    5fd4                    lw    a3,60(a5)
-    20001ade:    10024737              lui    a4,0x10024
-    20001ae2:    9abd                    andi    a3,a3,-17
-    20001ae4:    dfd4                    sw    a3,60(a5)
-    20001ae6:    5fd0                    lw    a2,60(a5)
-    20001ae8:    100246b7              lui    a3,0x10024
-    20001aec:    fdf67613              andi    a2,a2,-33
-    20001af0:    dfd0                    sw    a2,60(a5)
-    20001af2:    5fd0                    lw    a2,60(a5)
-    20001af4:    dff67613              andi    a2,a2,-513
-    20001af8:    dfd0                    sw    a2,60(a5)
-    20001afa:    5f90                    lw    a2,56(a5)
-    20001afc:    00866613              ori    a2,a2,8
-    20001b00:    df90                    sw    a2,56(a5)
-    20001b02:    5f90                    lw    a2,56(a5)
-    20001b04:    01066613              ori    a2,a2,16
-    20001b08:    df90                    sw    a2,56(a5)
-    20001b0a:    5f90                    lw    a2,56(a5)
-    20001b0c:    02066613              ori    a2,a2,32
-    20001b10:    df90                    sw    a2,56(a5)
-    20001b12:    5f90                    lw    a2,56(a5)
-    20001b14:    20066613              ori    a2,a2,512
-    20001b18:    df90                    sw    a2,56(a5)
-    20001b1a:    43d0                    lw    a2,4(a5)
-    20001b1c:    40066613              ori    a2,a2,1024
-    20001b20:    c3d0                    sw    a2,4(a5)
-    20001b22:    06400793              li    a5,100
-    20001b26:    c31c                    sw    a5,0(a4)
-    20001b28:    000807b7              lui    a5,0x80
-    20001b2c:    c33c                    sw    a5,64(a4)
-    20001b2e:    4789                    li    a5,2
-    20001b30:    cb1c                    sw    a5,16(a4)
-    20001b32:    533c                    lw    a5,96(a4)
-    20001b34:    9bf9                    andi    a5,a5,-2
-    20001b36:    d33c                    sw    a5,96(a4)
-    20001b38:    02070623              sb    zero,44(a4) # 0x1002402c
-    20001b3c:    4f1c                    lw    a5,24(a4)
-    20001b3e:    9bf1                    andi    a5,a5,-4
-    20001b40:    cf1c                    sw    a5,24(a4)
-    20001b42:    46fc                    lw    a5,76(a3)
-    20001b44:    fef04fe3              bgtz    a5,0x20001b42
-    20001b48:    20002437              lui    s0,0x20002
-    20001b4c:    fd440513              addi    a0,s0,-44 # 0x20001fd4
-    20001b50:    c65fe0ef              jal    ra,0x200007b4
-    20001b54:    200025b7              lui    a1,0x20002
-    20001b58:    06400613              li    a2,100
-    20001b5c:    1d458593              addi    a1,a1,468 # 0x200021d4
-    20001b60:    10024537              lui    a0,0x10024
-    20001b64:    37a9                    jal    0x20001aae
-    20001b66:    200025b7              lui    a1,0x20002
-    20001b6a:    06400613              li    a2,100
-    20001b6e:    1dc58593              addi    a1,a1,476 # 0x200021dc
-    20001b72:    10024537              lui    a0,0x10024
-    20001b76:    3f25                    jal    0x20001aae
-    20001b78:    200025b7              lui    a1,0x20002
-    20001b7c:    06400613              li    a2,100
-    20001b80:    1ec58593              addi    a1,a1,492 # 0x200021ec
-    20001b84:    10024537              lui    a0,0x10024
-    20001b88:    371d                    jal    0x20001aae
-    20001b8a:    fd440513              addi    a0,s0,-44
-    20001b8e:    c27fe0ef              jal    ra,0x200007b4
-    20001b92:    40b2                    lw    ra,12(sp)
-    20001b94:    4422                    lw    s0,8(sp)
-    20001b96:    4501                    li    a0,0
-    20001b98:    0141                    addi    sp,sp,16
+    20001ac2:    8522                    mv     a0,s0
+    20001ac4:    4422                    lw     s0,8(sp)
+    20001ac6:    40b2                    lw     ra,12(sp)
+    20001ac8:    0141                    addi   sp,sp,16
+    20001aca:    bd55                    j      0x2000197e  # <at_recv>
+    # end <at_sendrecv>
+
+    # <esp32_init>
+    # gpio
+    20001acc:    100127b7                lui    a5,0x10012 # 0x10012000 GPIO
+    20001ad0:    5fd4                    lw     a3,60(a5) # iof_sel
+    20001ad2:    1141                    addi   sp,sp,-16 # function stuff
+    20001ad4:    c606                    sw     ra,12(sp) # function stuff
+    20001ad6:    c422                    sw     s0,8(sp) # function stuff
+    20001ad8:    9add                    andi   a3,a3,-9 # iof_sel & ~(SPI1_DQ0)
+    20001ada:    dfd4                    sw     a3,60(a5) # iof_sel & ~(SPI1_DQ0) write
+    20001adc:    5fd4                    lw     a3,60(a5) # iof_sel
+    20001ade:    10024737                lui    a4,0x10024 # 0x10024000 SPI1
+    20001ae2:    9abd                    andi   a3,a3,-17 # iof_sel & ~(SPI1_DQ1)
+    20001ae4:    dfd4                    sw     a3,60(a5) # iof_sel & ~(SPI1_DQ1) write
+    20001ae6:    5fd0                    lw     a2,60(a5) # iof_sel
+    20001ae8:    100246b7                lui    a3,0x10024 # 0x10024000 SPI1
+    20001aec:    fdf67613                andi   a2,a2,-33 # iof_setl & ~(SPI1_SCK)
+    20001af0:    dfd0                    sw     a2,60(a5) # iof_setl & ~(SPI1_SCK) write
+    20001af2:    5fd0                    lw     a2,60(a5) iof_sel
+    20001af4:    dff67613                andi   a2,a2,-513 # iof_setl & ~(SPI1_CS2)
+    20001af8:    dfd0                    sw     a2,60(a5) # iof_setl & ~(SPI1_CS2) write
+    20001afa:    5f90                    lw     a2,56(a5) # iof_en
+    20001afc:    00866613                ori    a2,a2,8 # iof_en | SPI1_DQ0
+    20001b00:    df90                    sw     a2,56(a5) # iof_en | SPI1_DQ0 write
+    20001b02:    5f90                    lw     a2,56(a5) # iof_en
+    20001b04:    01066613                ori    a2,a2,16 # iof_en | SPI1_DQ1
+    20001b08:    df90                    sw     a2,56(a5) # iof_en | SPI1_DQ1 write
+    20001b0a:    5f90                    lw     a2,56(a5) # iof_en
+    20001b0c:    02066613                ori    a2,a2,32 # iof_en | SPI1_SCK
+    20001b10:    df90                    sw     a2,56(a5) # iof_en | SPI1_SCK write
+    20001b12:    5f90                    lw     a2,56(a5) # iof_en
+    20001b14:    20066613                ori    a2,a2,512 # iof_en | SPI1_CS2
+    20001b18:    df90                    sw     a2,56(a5) # iof_en | SPI1_CS2 write
+    20001b1a:    43d0                    lw     a2,4(a5) # input_en
+    20001b1c:    40066613                ori    a2,a2,1024 # enable input on pin 10
+    20001b20:    c3d0                    sw     a2,4(a5) # enable input on pin 10 write
+    # spi
+    # a4 = 0x10024000 SPI1
+    20001b22:    06400793                li     a5,100 # new sckdiv 100
+    20001b26:    c31c                    sw     a5,0(a4) # set sckdiv to 100
+    20001b28:    000807b7                lui    a5,0x80 # 0x00080000 frame format (proto: single, msb first, normal, 8 bit len)
+    20001b2c:    c33c                    sw     a5,64(a4) # set frame format
+    20001b2e:    4789                    li     a5,2 # set csid to 2
+    20001b30:    cb1c                    sw     a5,16(a4) # set csid to 2 write
+    20001b32:    533c                    lw     a5,96(a4) # fctrl
+    20001b34:    9bf9                    andi   a5,a5,-2 # disable direct memory mapping
+    20001b36:    d33c                    sw     a5,96(a4) # disable direct memory mapping write
+    20001b38:    02070623                sb     zero,44(a4) # 0x1002402c set delay1 intercs to 0
+    20001b3c:    4f1c                    lw     a5,24(a4) # csmode
+    20001b3e:    9bf1                    andi   a5,a5,-4 # csmode & ~(3) (set csmode to AUTO)
+    20001b40:    cf1c                    sw     a5,24(a4) # set csmode AUTO write
+    # while rxdat > 0 {
+    20001b42:    46fc                    lw     a5,76(a3) # rxdata
+    20001b44:    fef04fe3                bgtz   a5,0x20001b42
+    # }
+    20001b48:    20002437                lui    s0,0x20002 # 0x20002000
+    20001b4c:    fd440513                addi   a0,s0,-44 # 0x20001fd4
+    20001b50:    c65fe0ef                jal    ra,0x200007b4
+    20001b54:    200025b7                lui    a1,0x20002
+    20001b58:    06400613                li     a2,100
+    20001b5c:    1d458593                addi   a1,a1,468 # 0x200021d4
+    20001b60:    10024537                lui    a0,0x10024
+    20001b64:    37a9                    jal    0x20001aae # <at_sendrecv>
+    20001b66:    200025b7                lui    a1,0x20002
+    20001b6a:    06400613                li     a2,100
+    20001b6e:    1dc58593                addi   a1,a1,476 # 0x200021dc
+    20001b72:    10024537                lui    a0,0x10024
+    20001b76:    3f25                    jal    0x20001aae # <at_sendrecv>
+    20001b78:    200025b7                lui    a1,0x20002
+    20001b7c:    06400613                li     a2,100
+    20001b80:    1ec58593                addi   a1,a1,492 # 0x200021ec
+    20001b84:    10024537                lui    a0,0x10024
+    20001b88:    371d                    jal    0x20001aae # <at_sendrecv>
+    20001b8a:    fd440513                addi   a0,s0,-44
+    20001b8e:    c27fe0ef                jal    ra,0x200007b4 # <_puts>
+    20001b92:    40b2                    lw     ra,12(sp)
+    20001b94:    4422                    lw     s0,8(sp)
+    20001b96:    4501                    li     a0,0
+    20001b98:    0141                    addi   sp,sp,16
     20001b9a:    8082                    ret
+    # end esp32_init
+
     20001b9c:    c621                    beqz    a2,0x20001be4
     20001b9e:    1141                    addi    sp,sp,-16
     20001ba0:    00000597              auipc    a1,0x0

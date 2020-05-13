@@ -2463,41 +2463,43 @@ Disassembly of section .text:
 20001aca:	bd55                	j	2000197e <at_recv>
 
 20001acc <esp32_init>:
-20001acc:	100127b7          	lui	a5,0x10012
-20001ad0:	5fd4                	lw	a3,60(a5)
-20001ad2:	1141                	addi	sp,sp,-16
-20001ad4:	c606                	sw	ra,12(sp)
-20001ad6:	c422                	sw	s0,8(sp)
-20001ad8:	9add                	andi	a3,a3,-9
-20001ada:	dfd4                	sw	a3,60(a5)
-20001adc:	5fd4                	lw	a3,60(a5)
-20001ade:	10024737          	lui	a4,0x10024
-20001ae2:	9abd                	andi	a3,a3,-17
-20001ae4:	dfd4                	sw	a3,60(a5)
-20001ae6:	5fd0                	lw	a2,60(a5)
-20001ae8:	100246b7          	lui	a3,0x10024
-20001aec:	fdf67613          	andi	a2,a2,-33
-20001af0:	dfd0                	sw	a2,60(a5)
-20001af2:	5fd0                	lw	a2,60(a5)
-20001af4:	dff67613          	andi	a2,a2,-513
-20001af8:	dfd0                	sw	a2,60(a5)
-20001afa:	5f90                	lw	a2,56(a5)
-20001afc:	00866613          	ori	a2,a2,8
-20001b00:	df90                	sw	a2,56(a5)
-20001b02:	5f90                	lw	a2,56(a5)
-20001b04:	01066613          	ori	a2,a2,16
-20001b08:	df90                	sw	a2,56(a5)
-20001b0a:	5f90                	lw	a2,56(a5)
-20001b0c:	02066613          	ori	a2,a2,32
-20001b10:	df90                	sw	a2,56(a5)
-20001b12:	5f90                	lw	a2,56(a5)
-20001b14:	20066613          	ori	a2,a2,512
-20001b18:	df90                	sw	a2,56(a5)
-20001b1a:	43d0                	lw	a2,4(a5)
-20001b1c:	40066613          	ori	a2,a2,1024
-20001b20:	c3d0                	sw	a2,4(a5)
-20001b22:	06400793          	li	a5,100
-20001b26:	c31c                	sw	a5,0(a4)
+# gpio
+20001acc:	100127b7          	lui	a5,0x10012 # 0x10012000 GPIO
+20001ad0:	5fd4                	lw	a3,60(a5) # iof_sel
+20001ad2:	1141                	addi	sp,sp,-16 # function stuff
+20001ad4:	c606                	sw	ra,12(sp) # function stuff
+20001ad6:	c422                	sw	s0,8(sp) # function stuff
+20001ad8:	9add                	andi	a3,a3,-9 # iof_sel & ~(SPI1_DQ0)
+20001ada:	dfd4                	sw	a3,60(a5) # iof_sel & ~(SPI1_DQ0) write
+20001adc:	5fd4                	lw	a3,60(a5) # iof_sel
+20001ade:	10024737          	lui	a4,0x10024 # 0x10024000 SPI1
+20001ae2:	9abd                	andi	a3,a3,-17 # iof_sel & ~(SPI1_DQ1)
+20001ae4:	dfd4                	sw	a3,60(a5) # iof_sel & ~(SPI1_DQ1) write
+20001ae6:	5fd0                	lw	a2,60(a5) # iof_sel
+20001ae8:	100246b7          	lui	a3,0x10024 # 0x10024000 SPI1
+20001aec:	fdf67613          	andi	a2,a2,-33 # iof_setl & ~(SPI1_SCK)
+20001af0:	dfd0                	sw	a2,60(a5) # iof_setl & ~(SPI1_SCK) write
+20001af2:	5fd0                	lw	a2,60(a5) # iof_sel
+20001af4:	dff67613          	andi	a2,a2,-513 # iof_setl & ~(SPI1_CS2)
+20001af8:	dfd0                	sw	a2,60(a5) # iof_setl & ~(SPI1_CS2) write
+20001afa:	5f90                	lw	a2,56(a5) # iof_en
+20001afc:	00866613          	ori	a2,a2,8 # enable iof on pin 3 (SPI1_DQ0)
+20001b00:	df90                	sw	a2,56(a5) # enable iof on pin 3 (SPI1_DQ0) write
+20001b02:	5f90                	lw	a2,56(a5) # iof_en
+20001b04:	01066613          	ori	a2,a2,16 # enable iof on pin 4 (SPI1_DQ1)
+20001b08:	df90                	sw	a2,56(a5) # enable iof on pin 4 (SPI1_DQ1)
+20001b0a:	5f90                	lw	a2,56(a5) # iof_en
+20001b0c:	02066613          	ori	a2,a2,32 # enable iof on pin 5 (SPI1_SCK)
+20001b10:	df90                	sw	a2,56(a5) # enable iof on pin 5 (SPI1_SCK)
+20001b12:	5f90                	lw	a2,56(a5) # iof_en
+20001b14:	20066613          	ori	a2,a2,512 # enable iof on pin 9 (SPI1_CS2)
+20001b18:	df90                	sw	a2,56(a5) # enable iof on pin 9 (SPI1_CS2)
+20001b1a:	43d0                	lw	a2,4(a5) # input_en
+20001b1c:	40066613          	ori	a2,a2,1024 # enable input on pin 10
+20001b20:	c3d0                	sw	a2,4(a5) # enable input on pin 10 write
+# spi
+20001b22:	06400793          	li	a5,100 # sckdiv
+20001b26:	c31c                	sw	a5,0(a4) # set sckdiv to 100
 20001b28:	000807b7          	lui	a5,0x80
 20001b2c:	c33c                	sw	a5,64(a4)
 20001b2e:	4789                	li	a5,2
