@@ -64,11 +64,15 @@
 #define mmio64(reg, offset) (*(volatile uint64_t *)((reg) + (offset)))
 #define mmio mmio32
 
+#define mtime_lo mmio(CLINT_CTRL_ADDR, CLINT_MTIME)
+#define mtime_hi mmio(CLINT_CTRL_ADDR, CLINT_MTIME + 4)
+#define mtime mmio64(CLINT_CTRL_ADDR, CLINT_MTIME)
+
 #define PROC_START_ADDR 0x20010000
 
 void bench_rstclk();
 void esp32_init();
-uint32_t measure_lfosc_freq();
+void measure_lfosc_freq();
 void _puts(const char *);
 
 int main() {
@@ -93,8 +97,8 @@ int main() {
     mmio(GPIO_CTRL_ADDR, GPIO_OUTPUT_EN) &= ~GREEN_LED;
 
     do {
-      then = mmio64(CLINT_CTRL_ADDR, CLINT_MTIME) + 0x4000;
-      while (mmio64(CLINT_CTRL_ADDR, CLINT_MTIME) < then) {
+      then = mtime + 0x4000;
+      while (mtime < then) {
       }
       mmio(GPIO_CTRL_ADDR, GPIO_OUTPUT_XOR) ^= RED_LED;
 
@@ -120,8 +124,8 @@ int main() {
 
   // clint
   // 200002E0
-  then = mmio64(CLINT_CTRL_ADDR, CLINT_MTIME) + 0x4000;
-  while (mmio64(CLINT_CTRL_ADDR, CLINT_MTIME) < then) {
+  then = mtime + 0x4000;
+  while (mtime < then) {
   }
 
   // aon
@@ -176,8 +180,8 @@ int main() {
 
   // delay
   // 20000380
-  then = mmio64(CLINT_CTRL_ADDR, CLINT_MTIME) + 0x4000;
-  while (mmio64(CLINT_CTRL_ADDR, CLINT_MTIME) < then) {
+  then = mtime + 0x4000;
+  while (mtime < then) {
   }
 
   bench_rstclk();
@@ -253,11 +257,24 @@ void esp32_init() {
   // todo
 }
 
+uint32_t lfosc_freq;
 // 200010ac
-uint32_t measure_lfosc_freq() {
-  uint32_t lfosc_freq;
+void measure_lfosc_freq() {
+  mtime_lo = 0;
+  uint32_t delta, prev = mtime_lo;
 
-  return lfosc_freq;
+  uint32_t mcycle_lo, prev_mcycle_lo;
+  __asm__ volatile("csrr %0, mcycle" : "=r"(prev_mcycle_lo));
+
+  uint32_t time = 3000;
+  do {
+    delta = mtime_lo - prev;
+  } while (delta < time);
+
+  __asm__ volatile("csrr %0, mcycle" : "=r"(mcycle_lo));
+
+  lfosc_freq =
+      524288000 / (((mcycle_lo - prev_mcycle_lo) / time) * 32768 / 1000);
 }
 
 // 200007b4

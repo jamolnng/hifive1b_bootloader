@@ -1571,34 +1571,38 @@ Disassembly of section .sec1:
 
     # <measure_lfosc_freq>
     200010ac:    100087b7                lui   a5,0x10008 # 0x10008000 PRCI
-    200010b0:    00060737                lui   a4,0x60
-    200010b4:    c798                    sw    a4,8(a5)
+    200010b0:    00060737                lui   a4,0x60 # 0x00060000 external osc and bypass to 1
+    200010b4:    c798                    sw    a4,8(a5) # 0x10008008 pll_cfg to use ext osc
     200010b6:    4798                    lw    a4,8(a5)
-    200010b8:    6641                    lui   a2,0x10
-    200010ba:    0200c6b7                lui   a3,0x200c
-    200010be:    8f51                    or    a4,a4,a2
-    200010c0:    c798                    sw    a4,8(a5)
-    200010c2:    fe06ac23                sw    zero,-8(a3) # 0x200bff8
-    200010c6:    ff86a603                lw    a2,-8(a3)
+    200010b8:    6641                    lui   a2,0x10 # 0x00010000
+    200010ba:    0200c6b7                lui   a3,0x200c # 0x0200C000
+    200010be:    8f51                    or    a4,a4,a2 # drive clock with pll
+    200010c0:    c798                    sw    a4,8(a5) # drive clock with pll write
+    200010c2:    fe06ac23                sw    zero,-8(a3) # 0x200bff8 mtime_lo = 0
+    200010c6:    ff86a603                lw    a2,-8(a3) # load prev = mtime_lo
     200010ca:    b0002873                csrr  a6,mcycle
     200010ce:    b80027f3                csrr  a5,mcycleh
-    200010d2:    6585                    lui   a1,0x1
-    200010d4:    bb758713                addi  a4,a1,-1097 # 0xbb7
-    200010d8:    ff86a783                lw    a5,-8(a3)
-    200010dc:    8f91                    sub   a5,a5,a2
+    200010d2:    6585                    lui   a1,0x1 # 0x00001000
+    200010d4:    bb758713                addi  a4,a1,-1097 # 0xbb7 = 2999
+    # do
+    200010d8:    ff86a783                lw    a5,-8(a3) # 0x200bff8 mtime_lo
+    200010dc:    8f91                    sub   a5,a5,a2 # delta = mtime_lo - prev
+    # while(delta < 3000)
     200010de:    fef77de3                bgeu  a4,a5,0x200010d8
+
     200010e2:    b0002573                csrr  a0,mcycle
     200010e6:    b80027f3                csrr  a5,mcycleh
-    200010ea:    41050533                sub   a0,a0,a6
-    200010ee:    bb858593                addi  a1,a1,-1096
-    200010f2:    02b55533                divu  a0,a0,a1
-    200010f6:    3e800793                li    a5,1000
-    200010fa:    053e                    slli  a0,a0,0xf
-    200010fc:    02f55533                divu  a0,a0,a5
-    20001100:    1f4007b7                lui   a5,0x1f400
-    20001104:    02a7d533                divu  a0,a5,a0
-    20001108:    84a1a023                sw    a0,-1984(gp)
+    200010ea:    41050533                sub   a0,a0,a6 # mcycle_lo - prev_mcycle_lo
+    200010ee:    bb858593                addi  a1,a1,-1096 # 0xBB8 = 3000
+    200010f2:    02b55533                divu  a0,a0,a1 # (mcycle_lo - prev_mcycle_lo) / 3000
+    200010f6:    3e800793                li    a5,1000 # a5 = 1000
+    200010fa:    053e                    slli  a0,a0,0xf # ((mcycle_lo - prev_mcycle_lo) / 3000) * 32768
+    200010fc:    02f55533                divu  a0,a0,a5 # ((mcycle_lo - prev_mcycle_lo) / 3000) * 32768 / 1000
+    20001100:    1f4007b7                lui   a5,0x1f400 # 0x1f400000 = 524,288,000
+    20001104:    02a7d533                divu  a0,a5,a0 # 0x1f400000 / (((mcycle_lo - prev_mcycle_lo) / 3000) * 32768 / 1000)
+    20001108:    84a1a023                sw    a0,-1984(gp) # lfosc_freq
     2000110c:    8082                    ret
+    # end measure_lfosc_freq
 
     # <bench_rstclk>
     2000110e:    10014737              lui    a4,0x10014 # QSPI0 0x10014000
