@@ -2200,7 +2200,7 @@ Disassembly of section .sec1:
     2000170a:    8441a703                lw    a4,-1980(gp) # 800005c4 <esp32_diag_mode>
     2000170e:    4789                    li    a5,2
     20001710:    4901                    li    s2,0 # return 0
-    ## if 2 >= esp32_diag_mode
+    ## if 2 >= esp32_diag_mode (I believe this comes from a type and meant esp32_diag_mode > 2)
     20001712:    f8e7f7e3                bgeu  a5,a4,0x200016a0 # return
     ## else
     20001716:    20002537                lui   a0,0x20002
