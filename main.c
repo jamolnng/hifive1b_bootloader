@@ -38,6 +38,7 @@
 #define SPI_CSMODE 0x18
 #define SPI_DELAY1 0x28
 #define SPI_FMT 0x40u
+#define SPI_TXDATA 0x48u
 #define SPI_RXDATA 0x4Cu
 #define SPI_FCTRL 0x60u
 
@@ -51,6 +52,7 @@
 #define SPI_FMT_LEN_SHIFT 16u
 
 #define SPI_CSMODE_AUTO 0x0u
+#define SPI_CSMODE_HOLD 0x2u
 #define SPI_CSMODE_MASK 0x3u
 
 #define UART0_CTRL_ADDR 0x10013000u
@@ -107,6 +109,8 @@ int32_t at_wait_done(uint32_t timeout);
 
 int32_t spi_transceive_one(uint32_t spi, int32_t num_xfers,
                            int32_t check_ready);
+
+void wait_ms(uint32_t time);
 
 void _puts(const char *str);
 void _putc(char c);
@@ -439,8 +443,38 @@ int32_t at_wait_done(uint32_t timeout) {
 
 int32_t spi_transceive_one(uint32_t spi, int32_t num_xfers,
                            int32_t check_ready) {
-  // todo
+  wait_ms(5);
+  mmio(spi, SPI_CSMODE) &= (~SPI_CSMODE_MASK | SPI_CSMODE_HOLD);
+  if (num_xfers > 0) {
+    char *tx_pos = tx_buf;
+    char *rx_pos = rx_buf;
+    do {
+      mmio8(spi, SPI_TXDATA) = *tx_pos;
+      // seriously there are better ways to write these delays...
+      // especially because they're clock based not time based
+      uint32_t tmp = 30;
+      do {
+        tmp--;
+      } while (tmp != 0);
+      // check that we're at the end of transmission
+      if (num_xfers - 1 == rx_pos - rx_buf) {
+        mmio(spi, SPI_CSMODE) &= (~SPI_CSMODE_MASK | SPI_CSMODE_AUTO);
+      }
+      // while rxdata empty
+      while ((int32_t)mmio(spi, SPI_CSMODE) < 0) {
+      }
+      *rx_pos = mmio8(spi, SPI_RXDATA);
+    } while (rx_pos != rx_buf + num_xfers);
+  }
   return 0;
+}
+
+void wait_ms(uint32_t time) {
+  // this is approximate since the rtc is 32768Hz and this
+  // approximates it as 33000Hz
+  mtime_lo = 0u;
+  while (mtime_lo < time * 33u)
+    ;
 }
 
 // 200007b4
@@ -456,7 +490,11 @@ void _puts(const char *str) {
 }
 
 void _putc(char c) {
-  // todo
+  uint32_t uart = print_to_uart1 ? UART1_CTRL_ADDR : UART0_CTRL_ADDR;
+  // checks if txdata is full and waits until it isn't
+  while ((int32_t)mmio(uart, UART_TXDATA) < 0) {
+  }
+  mmio8(uart, UART_TXDATA) = c;
 }
 
 uint32_t strlen(const char *str) {

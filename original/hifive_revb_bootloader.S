@@ -1039,13 +1039,19 @@ Disassembly of section .sec1:
     20000a78:    00e79463              bne    a5,a4,0x20000a80
     20000a7c:    fec6e8e3              bltu    a3,a2,0x20000a6c
     20000a80:    8082                    ret
-    20000a82:    00551793              slli    a5,a0,0x5
-    20000a86:    0200c737              lui    a4,0x200c
-    20000a8a:    fe072c23              sw    zero,-8(a4) # 0x200bff8
-    20000a8e:    953e                    add    a0,a0,a5
-    20000a90:    ff872783              lw    a5,-8(a4)
+
+    # <wait_ms>
+    # a0 = time
+    20000a82:    00551793              slli    a5,a0,0x5 # a5 = time * 32
+    20000a86:    0200c737              lui     a4,0x200c
+    20000a8a:    fe072c23              sw      zero,-8(a4) # 0x200bff8 (mtime_lo) = 0
+    20000a8e:    953e                  add     a0,a0,a5 # a0 = time + time * 32 (time * 33)
+    20000a90:    ff872783              lw      a5,-8(a4) # mtime_lo
+    ## if mtime_lo < time * 33
     20000a94:    fea7eee3              bltu    a5,a0,0x20000a90
-    20000a98:    8082                    ret
+    20000a98:    8082                  ret
+    # end <wait_ms>
+
     20000a9a:    0200c7b7              lui    a5,0x200c
     20000a9e:    fe07ac23              sw    zero,-8(a5) # 0x200bff8
     20000aa2:    0200c737              lui    a4,0x200c
@@ -1852,48 +1858,65 @@ Disassembly of section .sec1:
     20001398:    4902                    lw    s2,0(sp)
     2000139a:    0141                    addi    sp,sp,16
     2000139c:    8082                    ret
+
+    # <spi_transceive_one>
+    # a0 = spi
+    # a1 = num_xfers
+    # a2 = check_ready
     2000139e:    1141                    addi    sp,sp,-16
-    200013a0:    c422                    sw    s0,8(sp)
-    200013a2:    842a                    mv    s0,a0
-    200013a4:    4515                    li    a0,5
-    200013a6:    c226                    sw    s1,4(sp)
-    200013a8:    c606                    sw    ra,12(sp)
-    200013aa:    84ae                    mv    s1,a1
-    200013ac:    ed6ff0ef              jal    ra,0x20000a82
-    200013b0:    4c1c                    lw    a5,24(s0)
-    200013b2:    9bf1                    andi    a5,a5,-4
-    200013b4:    0027e793              ori    a5,a5,2
-    200013b8:    cc1c                    sw    a5,24(s0)
-    200013ba:    04905063              blez    s1,0x200013fa
-    200013be:    88818693              addi    a3,gp,-1912
-    200013c2:    04068513              addi    a0,a3,64 # 0x10040
-    200013c6:    fff48813              addi    a6,s1,-1 # 0x10012fff
-    200013ca:    00a485b3              add    a1,s1,a0
-    200013ce:    872a                    mv    a4,a0
-    200013d0:    0006c603              lbu    a2,0(a3)
-    200013d4:    47f9                    li    a5,30
-    200013d6:    04c40423              sb    a2,72(s0)
+    200013a0:    c422                    sw      s0,8(sp)
+    200013a2:    842a                    mv      s0,a0 # s0 = spi
+    200013a4:    4515                    li      a0,5 # a0 = 5
+    200013a6:    c226                    sw      s1,4(sp)
+    200013a8:    c606                    sw      ra,12(sp)
+    200013aa:    84ae                    mv      s1,a1 # s1 = num_xfers
+    200013ac:    ed6ff0ef                jal     ra,0x20000a82 # <wait_ms>
+    200013b0:    4c1c                    lw      a5,24(s0) # csmode
+    200013b2:    9bf1                    andi    a5,a5,-4 # clear csmode
+    200013b4:    0027e793                ori     a5,a5,2 # set csmode to HOLD
+    200013b8:    cc1c                    sw      a5,24(s0) # write csmode
+    ## if num_xfers <= 0 (return)
+    200013ba:    04905063                blez    s1,0x200013fa
+    ## else
+    200013be:    88818693                addi    a3,gp,-1912 # tx_pos = tx_buf
+    200013c2:    04068513                addi    a0,a3,64 # rx_buf
+    200013c6:    fff48813                addi    a6,s1,-1 # a6 = num_xfers - 1
+    200013ca:    00a485b3                add     a1,s1,a0 # a1 = num_xfers + rx_buf
+    200013ce:    872a                    mv      a4,a0 # rx_pos = rx_buf
+    200013d0:    0006c603                lbu     a2,0(a3) # a2 = tx_buf[0]
+    200013d4:    47f9                    li      a5,30 # a5 = 30
+    200013d6:    04c40423                sb      a2,72(s0) # spi txdata = tx_buf[0]
+    ## while(a5 != 0)
     200013da:    0001                    nop
-    200013dc:    17fd                    addi    a5,a5,-1
+    200013dc:    17fd                    addi    a5,a5,-1 # a5 = a5 - 1
     200013de:    fff5                    bnez    a5,0x200013da
-    200013e0:    40a707b3              sub    a5,a4,a0
-    200013e4:    02f80163              beq    a6,a5,0x20001406
-    200013e8:    447c                    lw    a5,76(s0)
-    200013ea:    fe07cfe3              bltz    a5,0x200013e8
-    200013ee:    00f70023              sb    a5,0(a4) # 0x10013000
-    200013f2:    0705                    addi    a4,a4,1
-    200013f4:    0685                    addi    a3,a3,1
-    200013f6:    fcb71de3              bne    a4,a1,0x200013d0
-    200013fa:    40b2                    lw    ra,12(sp)
-    200013fc:    4422                    lw    s0,8(sp)
-    200013fe:    4492                    lw    s1,4(sp)
-    20001400:    4501                    li    a0,0
+
+    200013e0:    40a707b3                sub     a5,a4,a0 # a5 = rx_buf - rx_buf
+    ## if num_xfers - 1 == rx_pos - rx_buf
+    200013e4:    02f80163                beq     a6,a5,0x20001406
+    ## while rxdata < 0 (while rxdata empty)
+    200013e8:    447c                    lw      a5,76(s0) # spi rxdata
+    200013ea:    fe07cfe3                bltz    a5,0x200013e8
+
+    200013ee:    00f70023                sb      a5,0(a4) # rx_pos = spi rxdata
+    200013f2:    0705                    addi    a4,a4,1 # rx_pos = rx_pos+1
+    200013f4:    0685                    addi    a3,a3,1 # tx_pos = tx_pos+1
+    ## if rx_pos != num_xfers + rx_buf
+    200013f6:    fcb71de3                bne     a4,a1,0x200013d0
+    # return
+    200013fa:    40b2                    lw      ra,12(sp)
+    200013fc:    4422                    lw      s0,8(sp)
+    200013fe:    4492                    lw      s1,4(sp)
+    20001400:    4501                    li      a0,0
     20001402:    0141                    addi    sp,sp,16
     20001404:    8082                    ret
-    20001406:    4c1c                    lw    a5,24(s0)
-    20001408:    9bf1                    andi    a5,a5,-4
-    2000140a:    cc1c                    sw    a5,24(s0)
-    2000140c:    bff1                    j    0x200013e8
+
+    20001406:    4c1c                    lw      a5,24(s0) # csmode
+    20001408:    9bf1                    andi    a5,a5,-4 # set csmode auto
+    2000140a:    cc1c                    sw      a5,24(s0) # store csmode
+    2000140c:    bff1                    j       0x200013e8
+    # end <spi_transceive_one>
+
     2000140e:    1141                    addi    sp,sp,-16
     20001410:    c606                    sw    ra,12(sp)
     20001412:    3771                    jal    0x2000139e
