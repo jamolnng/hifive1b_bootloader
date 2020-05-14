@@ -97,15 +97,21 @@
 
 void bench_rstclk();
 void measure_lfosc_freq();
-void _puts(const char *str);
 void esp32_init();
+
 int32_t at_sendrecv(uint32_t spi, const char *str, uint32_t timeout);
 int32_t at_send(uint32_t spi, const char *str, uint32_t timeout);
 int32_t at_recv(uint32_t spi);
 int32_t at_sendflag(uint32_t spi, char at_flag);
+int32_t at_wait_done(uint32_t timeout);
+
 int32_t spi_transceive_one(uint32_t spi, int32_t num_xfers,
                            int32_t check_ready);
+
+void _puts(const char *str);
+void _putc(char c);
 uint32_t strlen(const char *str);
+char *strncpy(char *dest, const char *src, uint32_t n);
 
 uint32_t print_to_uart1 = 0;
 uint32_t lfosc_freq = 32768;
@@ -181,7 +187,7 @@ int main() {
 
   // aon
   // 20000304
-  // save = mmio(AON_CTRL_ADDR, AON_BACKUP15)
+  // save = mmio(AON_CTRL_ADDR, AON_BACKUP15);
 
   // 20000310 || 2000031e
   if (save == BACKUP15_MAGIC2 || save == BACKUP15_MAGIC) {
@@ -310,18 +316,6 @@ void measure_lfosc_freq() {
       524288000 / (((mcycle_lo - prev_mcycle_lo) / time) * 32768 / 1000);
 }
 
-// 200007b4
-void _puts(const char *str) {
-  while (*str != 0) {
-    uint32_t uart = print_to_uart1 ? UART1_CTRL_ADDR : UART0_CTRL_ADDR;
-    // checks if txdata is full and waits until it isn't
-    while ((int32_t)mmio(uart, UART_TXDATA) < 0) {
-    }
-    mmio(uart, UART_TXDATA) = (uint32_t)*str;
-    str++;
-  }
-}
-
 void esp32_init() {
   mmio(GPIO_CTRL_ADDR, GPIO_IOF_SEL) &=
       ~(SPI1_DQ0 | SPI1_DQ1 | SPI1_SCK | SPI1_CS2);
@@ -368,18 +362,62 @@ int32_t at_sendrecv(uint32_t spi, const char *cmd, uint32_t timeout) {
 
 int32_t at_send(uint32_t spi, const char *str, uint32_t timeout) {
   uint32_t len = strlen(str);
-  int32_t err;
-  if (esp32_diag_mode == 0) {
+  if (esp32_diag_mode != 0) {
+    _puts(str);
+    _puts("-->");
+  }
+  int32_t err = at_sendflag(spi, (char)2);
+  if (err != 0) {
+    return 1;
+  }
+  // 20001626
+  if (esp32_diag_mode > 2) {
+    _puts("Flag Sent\r\n");
+  }
+  // 2000162a
+  // no idea what this is supposed to be doing or what generated this code
+  uint32_t tmp = len << 16;
+  tmp = tmp >> 16;
+  uint32_t tmp2 = tmp >> 7;
+  tx_buf[1] = (char)tmp2;
+  tx_buf[2] = (char)0;
+  tx_buf[3] = 'A';
+  tx_buf[0] = (char)len;
+  spi_transceive_one(spi, 4, 1);
+  // end no idea part
+
+  // 2000165e
+  if (esp32_diag_mode > 2) {
+    _puts("Length Sent\r\n");
+  }
+  if (at_wait_done(timeout) != 0) {
+    _puts("CMD Length Timed Out Busy\r\n");
   } else {
-    err = at_sendflag(spi, (char)2);
-    if (err != 0) {
-      return err;
+    // 2000166e
+    if (esp32_diag_mode > 2) {
+      _puts("CMD Length Sent\r\n");
     }
-    if (esp32_diag_mode < 2) {
-    } else {
-      uint32_t tmp = len << 16;
-      tmp = tmp >> 16;
-    }
+  }
+  if (rx_buf[0] != 'b') {
+    _puts("Send length error: ");
+    _putc(rx_buf[0]);
+    _putc(rx_buf[1]);
+    _putc(rx_buf[2]);
+    _putc(rx_buf[3]);
+    return 1;
+  }
+  strncpy(tx_buf, str, tmp);
+  spi_transceive_one(spi, (int32_t)tmp, 1);
+  if (rx_buf[0] == 'A') {
+    _puts(" Send sync error ");
+    return 1;
+  }
+  if (at_wait_done(timeout) != 0) {
+    _puts("CMD Length Timed Out Busy\r\n");
+    return err;
+  }
+  if (esp32_diag_mode > 2) {
+    _puts("CMD Done\r\n");
   }
   return 0;
 }
@@ -394,10 +432,31 @@ int32_t at_sendflag(uint32_t spi, char at_flag) {
   return 0;
 }
 
+int32_t at_wait_done(uint32_t timeout) {
+  // todo
+  return 0;
+}
+
 int32_t spi_transceive_one(uint32_t spi, int32_t num_xfers,
                            int32_t check_ready) {
   // todo
   return 0;
+}
+
+// 200007b4
+void _puts(const char *str) {
+  while (*str != 0) {
+    uint32_t uart = print_to_uart1 ? UART1_CTRL_ADDR : UART0_CTRL_ADDR;
+    // checks if txdata is full and waits until it isn't
+    while ((int32_t)mmio(uart, UART_TXDATA) < 0) {
+    }
+    mmio(uart, UART_TXDATA) = (uint32_t)*str;
+    str++;
+  }
+}
+
+void _putc(char c) {
+  // todo
 }
 
 uint32_t strlen(const char *str) {
@@ -405,4 +464,13 @@ uint32_t strlen(const char *str) {
   for (i = 0; str[i] != '\0'; i++)
     ;
   return i;
+}
+
+char *strncpy(char *dest, const char *src, uint32_t n) {
+  char *ret = dest;
+  do {
+    if (!n--) return ret;
+  } while (((*dest++) = (*src++)));
+  while (n--) *dest++ = 0;
+  return ret;
 }

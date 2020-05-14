@@ -2065,7 +2065,7 @@ Disassembly of section .sec1:
     200015ee:    cc52                    sw    s4,24(sp)
     200015f0:    8a2a                    mv    s4,a0 # s4 = spi
     200015f2:    852e                    mv    a0,a1 # a0 = str
-    200015f4:    d422                    sw    s0,40(sp)
+    200015f4:    d422                    sw    s0,40(sp) # s0 = spi
     200015f6:    ce4e                    sw    s3,28(sp)
     200015f8:    ca56                    sw    s5,20(sp)
     200015fa:    c85a                    sw    s6,16(sp)
@@ -2074,63 +2074,74 @@ Disassembly of section .sec1:
     20001600:    d04a                    sw    s2,32(sp)
     20001602:    c65e                    sw    s7,12(sp)
     20001604:    c462                    sw    s8,8(sp)
-    20001606:    8aae                    mv    s5,a1
+    20001606:    8aae                    mv    s5,a1 # s5 = str
     20001608:    8b32                    mv    s6,a2 # s6 = timeout
     2000160a:    798000ef                jal   ra,0x20001da2 # <strlen>
     2000160e:    8441a783                lw    a5,-1980(gp) # 800005c4 <esp32_diag_mode>
     20001612:    89aa                    mv    s3,a0 # s3 = strlen(str)
     ## if esp32_diag_mode != 0
     20001614:    e3dd                    bnez  a5,0x200016ba
-    ## else
+    ## then
     20001616:    4589                    li    a1,2 # a1 = 2
     20001618:    8552                    mv    a0,s4 # a0 = spi
     2000161a:    3509                    jal   0x2000141c # <at_sendflag>
     2000161c:    892a                    mv    s2,a0 # s2 = return value
     ## if at_sendflag(spi, 2) != 0 return
-    2000161e:    e149                    bnez  a0,0x200016a0
+    2000161e:    e149                    bnez  a0,0x200016a0 # return
     ## else
     20001620:    8441a703                lw    a4,-1980(gp) # 800005c4 <esp32_diag_mode>
     20001624:    4789                    li    a5,2
-    ## if esp32_diag_mode < 2
+    ## if 2 < esp32_diag_mode
     20001626:    0ee7ef63                bltu  a5,a4,0x20001724
-    ## else
+    ## then
     2000162a:    01099b93                slli  s7,s3,0x10 # s7 = strlen(str) << 16
     2000162e:    410bdb93                srai  s7,s7,0x10 # s7 = s7 >> 16
     20001632:    88818493                addi  s1,gp,-1912 # 80000608 <tx_buf>
-    20001636:    407bd793                srai  a5,s7,0x7 # s5 = s7 >> 7
-    2000163a:    00f480a3                sb    a5,1(s1)
+    20001636:    407bd793                srai  a5,s7,0x7 # a5 = s7 >> 7
+    2000163a:    00f480a3                sb    a5,1(s1) # tx_buf[1] = a5
     2000163e:    6791                    lui   a5,0x4
-    20001640:    10078793                addi  a5,a5,256 # 0x4100
-    20001644:    00f49123                sh    a5,2(s1)
-    20001648:    07f9f993                andi  s3,s3,127 # convert strlen to byte
+    20001640:    10078793                addi  a5,a5,256 # 0x00004100
+    20001644:    00f49123                sh    a5,2(s1) # tx_buf[2]=0 and tx_buf[3]=A
+    20001648:    07f9f993                andi  s3,s3,127 # convert strlen to unsigned byte
     2000164c:    4605                    li    a2,1 # a2 = 1
     2000164e:    4591                    li    a1,4 # a1 = 4
     20001650:    8552                    mv    a0,s4 # a0 = spi
     20001652:    01348023                sb    s3,0(s1) # tx_buf[0] = strlen(str)
     20001656:    33a1                    jal   0x2000139e # <spi_transceive_one>
     20001658:    8441a703                lw    a4,-1980(gp) # 800005c4 <esp32_diag_mode>
-    2000165c:    4789                    li    a5,2
+    2000165c:    4789                    li    a5,2 # a5 = 2
+    ## if 2 < esp32_diag_mode
     2000165e:    0ce7ea63                bltu  a5,a4,0x20001732
-    20001662:    855a                    mv    a0,s6
-    20001664:    31f5                    jal   0x20001350
+    ## else
+    20001662:    855a                    mv    a0,s6 # a0 = timeout
+    20001664:    31f5                    jal   0x20001350 # <at_wait_done>
+    ## if(at_wait_done(timeout) != 0) (eventually return)
     20001666:    e13d                    bnez  a0,0x200016cc
+    ## else
     20001668:    8441a703                lw    a4,-1980(gp) # 800005c4 <esp32_diag_mode>
     2000166c:    4789                    li    a5,2
+    ## if 2 < esp32_diag_mode
     2000166e:    0ce7ed63                bltu  a5,a4,0x20001748
-    20001672:    0404c703                lbu   a4,64(s1)
-    20001676:    06200793                li    a5,98
+    ## then
+    20001672:    0404c703                lbu   a4,64(s1) # a4 = rx_buf[0]
+    20001676:    06200793                li    a5,98 # a5 = 98 'b'
+    ## if rx_buf[0] == 'b'/98 (eventually return)
     2000167a:    06f70563                beq   a4,a5,0x200016e4
-    2000167e:    20002537                lui   a0,0x20002
-    20001682:    06450513                addi  a0,a0,100 # 0x20002064
-    20001686:    04048413                addi  s0,s1,64
-    2000168a:    92aff0ef                jal   ra,0x200007b4
-    2000168e:    04448493                addi  s1,s1,68
-    20001692:    00044503                lbu   a0,0(s0)
-    20001696:    0405                    addi  s0,s0,1
-    20001698:    3181                    jal   0x200012d8
+    ## else
+    ## rx_buf[0] != 'b'/98 (200016e0)
+    2000167e:    20002537                lui   a0,0x20002 # 20002000
+    20001682:    06450513                addi  a0,a0,100 # 0x20002064 "Send length error: "
+    20001686:    04048413                addi  s0,s1,64 # s0 = &rx_buf[0]
+    2000168a:    92aff0ef                jal   ra,0x200007b4 # <_puts>
+    2000168e:    04448493                addi  s1,s1,68 # &rx_buf[4]
+    ## do
+    20001692:    00044503                lbu   a0,0(s0) # rx_buf[0,1,2,3]
+    20001696:    0405                    addi  s0,s0,1 # &rx_buf[1,2,3,4]
+    20001698:    3181                    jal   0x200012d8 # <_putx>
     2000169a:    fe941ce3                bne   s0,s1,0x20001692
-    2000169e:    4905                    li    s2,1
-    ## at_sendflag(spi) != 0
+    ## while rx_buf[1..4] != rx_buf[4]
+    2000169e:    4905                    li    s2,1 # return 1
+    ## at_sendflag(spi, 2) != 0
     # (return)
     200016a0:    50b2                    lw    ra,44(sp)
     200016a2:    5422                    lw    s0,40(sp)
@@ -2145,64 +2156,87 @@ Disassembly of section .sec1:
     200016b4:    4c22                    lw    s8,8(sp)
     200016b6:    6145                    addi  sp,sp,48
     200016b8:    8082                    ret
-    ## esp32_diag_mode != 0
+    ## esp32_diag_mode != 0 (20001614)
+    # s5 = str
     200016ba:    8556                    mv    a0,s5
-    200016bc:    3989                    jal   0x2000130e
+    200016bc:    3989                    jal   0x2000130e # <_putnps> replacting with _puts
     200016be:    20002537                lui   a0,0x20002
-    200016c2:    02450513                addi  a0,a0,36 # 0x20002024
-    200016c6:    8eeff0ef                jal   ra,0x200007b4
+    200016c2:    02450513                addi  a0,a0,36 # 0x20002024 "-->"
+    200016c6:    8eeff0ef                jal   ra,0x200007b4 # <_puts>
     200016ca:    b7b1                    j     0x20001616
+    # at_wait_done(timeout) != 0 (20001666) (20001746)
+    # s1 = tx_buf
     200016cc:    20002537                lui   a0,0x20002
     200016d0:    03450513                addi  a0,a0,52 # 0x20002034
-    200016d4:    8e0ff0ef                jal   ra,0x200007b4
-    200016d8:    0404c703                lbu   a4,64(s1)
-    200016dc:    06200793                li    a5,98
+    200016d4:    8e0ff0ef                jal   ra,0x200007b4 # <_puts> "CMD Length Timed Out Busy\r\n"
+    200016d8:    0404c703                lbu   a4,64(s1) # a4 = rx_buf[0]
+    200016dc:    06200793                li    a5,98 # a5 = 98/'b'
+    ## if rx_buf[0] != 'b'/98
     200016e0:    f8f71fe3                bne   a4,a5,0x2000167e
-    200016e4:    865e                    mv    a2,s7
-    200016e6:    85d6                    mv    a1,s5
-    200016e8:    88818513                addi  a0,gp,-1912
-    200016ec:    6f2000ef                jal   ra,0x20001dde
-    200016f0:    4605                    li    a2,1
-    200016f2:    85de                    mv    a1,s7
-    200016f4:    8552                    mv    a0,s4
-    200016f6:    3165                    jal   0x2000139e
-    200016f8:    0404c703                lbu   a4,64(s1)
-    200016fc:    04300793                li    a5,67
+    ## else
+    ## if rx_buf[0] == 'b'/98 (2000167a)
+    # s7 = (strlen(str) << 16) >> 16
+    # s5 = str
+    # s4 = spi
+    # s1 = tx_buf
+    200016e4:    865e                    mv    a2,s7 # a2 = (strlen(str) << 16) >> 16
+    200016e6:    85d6                    mv    a1,s5 # a1 = str
+    200016e8:    88818513                addi  a0,gp,-1912 # 0x80000608 tx_buf
+    200016ec:    6f2000ef                jal   ra,0x20001dde # <strncpy>
+    200016f0:    4605                    li    a2,1 # a2 = 1
+    200016f2:    85de                    mv    a1,s7 # a1 = (strlen(str) << 16) >> 16
+    200016f4:    8552                    mv    a0,s4 # a0 = spi
+    200016f6:    3165                    jal   0x2000139e # <spi_transceive_one>
+    200016f8:    0404c703                lbu   a4,64(s1) # a4 = rx_buf[0]
+    200016fc:    04300793                li    a5,67 # a5 = 'A'
+    ## if rx_buf[0] == 'A' (returns)
     20001700:    04f70b63                beq   a4,a5,0x20001756
-    20001704:    855a                    mv    a0,s6
-    20001706:    31a9                    jal   0x20001350
+    ## else
+    20001704:    855a                    mv    a0,s6 # a0 = timeout
+    20001706:    31a9                    jal   0x20001350 # <at_wait_done>
+    ## if at_wait_done(timeout) != 0 (returns)
     20001708:    ed39                    bnez  a0,0x20001766
+    ## else
     2000170a:    8441a703                lw    a4,-1980(gp) # 800005c4 <esp32_diag_mode>
     2000170e:    4789                    li    a5,2
-    20001710:    4901                    li    s2,0
+    20001710:    4901                    li    s2,0 # return 0
+    ## if 2 >= esp32_diag_mode
     20001712:    f8e7f7e3                bgeu  a5,a4,0x200016a0 # return
+    ## else
     20001716:    20002537                lui   a0,0x20002
-    2000171a:    0a450513                addi  a0,a0,164 # 0x200020a4
-    2000171e:    896ff0ef                jal   ra,0x200007b4
+    2000171a:    0a450513                addi  a0,a0,164 # 0x200020a4 "CMD Done\r\n"
+    2000171e:    896ff0ef                jal   ra,0x200007b4 # <_puts>
     20001722:    bfbd                    j     0x200016a0 # return
+    # 2 < esp32_diag_mode (20001626)
     20001724:    20002537                lui   a0,0x20002
-    20001728:    02850513                addi  a0,a0,40 # 0x20002028
-    2000172c:    888ff0ef                jal   ra,0x200007b4
+    20001728:    02850513                addi  a0,a0,40 # 0x20002028 "Flag Sent\r\n"
+    2000172c:    888ff0ef                jal   ra,0x200007b4 # <_puts>
     20001730:    bded                    j     0x2000162a
+    # 2 < esp32_diag_mode (2000165e)
     20001732:    20002537                lui   a0,0x20002
-    20001736:    05450513                addi  a0,a0,84 # 0x20002054
-    2000173a:    87aff0ef                jal   ra,0x200007b4
-    2000173e:    855a                    mv    a0,s6
-    20001740:    3901                    jal   0x20001350
+    20001736:    05450513                addi  a0,a0,84 # 0x20002054 "Length Sent\r\n"
+    2000173a:    87aff0ef                jal   ra,0x200007b4 # <_puts>
+    2000173e:    855a                    mv    a0,s6 # a0 = timeout
+    20001740:    3901                    jal   0x20001350 # <at_wait_done>
+    ## if at_wait_done(timeout) == 0
     20001742:    f20503e3                beqz  a0,0x20001668
+    ## else
     20001746:    b759                    j     0x200016cc
+    # 2 < esp32_diag_mode (2000166e)
     20001748:    20002537                lui   a0,0x20002
-    2000174c:    05050513                addi  a0,a0,80 # 0x20002050
-    20001750:    864ff0ef                jal   ra,0x200007b4
+    2000174c:    05050513                addi  a0,a0,80 # 0x20002050 "CMD Length Sent\r\n"
+    20001750:    864ff0ef                jal   ra,0x200007b4 # <_puts>
     20001754:    bf39                    j     0x20001672
+    # rx_buf[0] == 'A' (20001700)
     20001756:    20002537                lui   a0,0x20002
-    2000175a:    07850513                addi  a0,a0,120 # 0x20002078
-    2000175e:    856ff0ef                jal   ra,0x200007b4
-    20001762:    4905                    li    s2,1
+    2000175a:    07850513                addi  a0,a0,120 # 0x20002078 " Send sync error "
+    2000175e:    856ff0ef                jal   ra,0x200007b4 # <_puts>
+    20001762:    4905                    li    s2,1 # return 1
     20001764:    bf35                    j     0x200016a0 # return
+    ## if at_wait_done(timeout) != 0 (20001708)
     20001766:    20002537                lui   a0,0x20002
-    2000176a:    08c50513                addi  a0,a0,140 # 0x2000208c
-    2000176e:    846ff0ef                jal   ra,0x200007b4
+    2000176a:    08c50513                addi  a0,a0,140 # 0x2000208c "CMD Timed Out Busy\r\n"
+    2000176e:    846ff0ef                jal   ra,0x200007b4 # <_puts>
     20001772:    b73d                    j     0x200016a0 # return
     # end <at_send>
 
@@ -2493,7 +2527,7 @@ Disassembly of section .sec1:
     20001aae:    1141                    addi   sp,sp,-16 # function stuff
     20001ab0:    c422                    sw     s0,8(sp) # function stuff
     20001ab2:    c606                    sw     ra,12(sp) # function stuff
-    20001ab4:    842a                    mv     s0,a0 # function stuff
+    20001ab4:    842a                    mv     s0,a0 # s0 = spi
     20001ab6:    3e1d                    jal    0x200015ec # <at_send>
     20001ab8:    c509                    beqz   a0,0x20001ac2 # if return == 0
     20001aba:    40b2                    lw     ra,12(sp)
