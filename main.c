@@ -464,6 +464,8 @@ int32_t spi_transceive_one(uint32_t spi, int32_t num_xfers,
       while ((int32_t)mmio(spi, SPI_CSMODE) < 0) {
       }
       *rx_pos = mmio8(spi, SPI_RXDATA);
+      rx_pos++;
+      tx_pos++;
     } while (rx_pos != rx_buf + num_xfers);
   }
   return 0;
