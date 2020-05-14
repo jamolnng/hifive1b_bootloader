@@ -356,11 +356,11 @@ Disassembly of section .sec1:
     ## if (save == BACKUP15_MAGIC2 || save == BACKUP15_MAGIC)
     20000304:    0bc7a703                lw     a4,188(a5) # 0x100000bc AON_BACKUP15
     20000308:    bed0c6b7                lui    a3,0xbed0c # BED0C000
-    2000030c:    ed068693                addi   a3,a3,-304 # 0xbed0bed0
+    2000030c:    ed068693                addi   a3,a3,-304 # 0xbed0bed0 BACKUP15_MAGIC2
     20000310:    18d70363                beq    a4,a3,0x20000496
     20000314:    0bc7a603                lw     a2,188(a5) # 0x100000bc AON_BACKUP15
     20000318:    d027b737                lui    a4,0xd027b # 0x0xD027B000
-    2000031c:    071d                    addi   a4,a4,7 # 0xD027B007
+    2000031c:    071d                    addi   a4,a4,7 # 0xD027B007 BACKUP15_MAGIC
     2000031e:    16e60c63                beq    a2,a4,0x20000496
     ## else {
     # set pmu sleep instructions 0-3 to 0x18
