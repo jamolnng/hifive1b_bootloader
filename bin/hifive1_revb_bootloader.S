@@ -431,7 +431,7 @@ Disassembly of section .text:
 200004a6:	4018                	lw	a4,0(s0)
 200004a8:	4789                	li	a5,2
 200004aa:	4401                	li	s0,0
-200004ac:	fee7e5e3          	bltu	a5,a4,20000496 <at_send+0xd4>
+200004ac:	fee7f5e3          	bgeu	a5,a4,20000496 <at_send+0xd4>
 200004b0:	00000517          	auipc	a0,0x0
 200004b4:	0f450513          	addi	a0,a0,244 # 200005a4 <esp32_init+0xe6>
 200004b8:	3539                	jal	200002c6 <_puts>
